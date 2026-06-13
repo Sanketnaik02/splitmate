@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary-50: #f0fdf4;
+    --color-primary-100: #dcfce7;
+    --color-primary-200: #bbf7d0;
+    --color-primary-300: #86efac;
+    --color-primary-400: #4ade80;
+    --color-primary-500: #22c55e;
+    --color-primary-600: #16a34a;
+    --color-primary-700: #15803d;
+    --color-primary-800: #166534;
+    --color-primary-900: #14532d;
+
+    --color-gray-50: #f9fafb;
+    --color-gray-100: #f3f4f6;
+    --color-gray-200: #e5e7eb;
+    --color-gray-300: #d1d5db;
+    --color-gray-400: #9ca3af;
+    --color-gray-500: #6b7280;
+    --color-gray-600: #4b5563;
+    --color-gray-700: #374151;
+    --color-gray-800: #1f2937;
+    --color-gray-900: #111827;
+    --color-gray-950: #030712;
+
+    --color-surface: #ffffff;
+    --color-surface-secondary: #f9fafb;
+    --color-surface-tertiary: #f3f4f6;
+  }
+
+  .dark {
+    --color-primary-50: #022c22;
+    --color-primary-100: #064e3b;
+    --color-primary-200: #065f46;
+    --color-primary-300: #047857;
+    --color-primary-400: #059669;
+    --color-primary-500: #10b981;
+    --color-primary-600: #34d399;
+    --color-primary-700: #6ee7b7;
+    --color-primary-800: #a7f3d0;
+    --color-primary-900: #d1fae5;
+
+    --color-gray-50: #111827;
+    --color-gray-100: #1f2937;
+    --color-gray-200: #374151;
+    --color-gray-300: #4b5563;
+    --color-gray-400: #6b7280;
+    --color-gray-500: #9ca3af;
+    --color-gray-600: #d1d5db;
+    --color-gray-700: #e5e7eb;
+    --color-gray-800: #f3f4f6;
+    --color-gray-900: #ffffff;
+    --color-gray-950: #ffffff;
+
+    --color-surface: #111827;
+    --color-surface-secondary: #030712;
+    --color-surface-tertiary: #1f2937;
+  }
+
+  .dark .bg-green-50 { background-color: #052e16; }
+  .dark .bg-green-100 { background-color: #064e3b; }
+  .dark .bg-green-200 { background-color: #065f46; }
+  .dark .text-green-500 { color: #10b981; }
+  .dark .text-green-600 { color: #34d399; }
+  .dark .text-green-700 { color: #6ee7b7; }
+
+  .dark .bg-red-50 { background-color: #450a0a; }
+  .dark .bg-red-100 { background-color: #7f1d1d; }
+  .dark .bg-red-500 { background-color: #ef4444; }
+  .dark .bg-red-600 { background-color: #ef4444; }
+  .dark .text-red-400 { color: #f87171; }
+  .dark .text-red-500 { color: #ef4444; }
+  .dark .text-red-600 { color: #f87171; }
+  .dark .text-red-700 { color: #fca5a5; }
+
+  .dark .bg-yellow-100 { background-color: #713f12; }
+  .dark .text-yellow-500 { color: #eab308; }
+  .dark .text-yellow-700 { color: #fde047; }
+
+  .dark .bg-blue-50 { background-color: #172554; }
+  .dark .text-blue-500 { color: #60a5fa; }
+  .dark .text-blue-600 { color: #3b82f6; }
+
+  .dark .bg-purple-50 { background-color: #2e1065; }
+  .dark .text-purple-500 { color: #a78bfa; }
+  .dark .text-purple-600 { color: #8b5cf6; }
+
+  .dark .bg-pink-50 { background-color: #4a0e4e; }
+  .dark .text-pink-500 { color: #f472b6; }
+
+  .dark .bg-orange-50 { background-color: #431407; }
+  .dark .text-orange-500 { color: #fb923c; }
+
+  .dark .bg-indigo-50 { background-color: #1e1b4b; }
+  .dark .text-indigo-500 { color: #818cf8; }
+
+  .dark .bg-cyan-50 { background-color: #164e63; }
+  .dark .text-cyan-500 { color: #22d3ee; }
+
+  .dark select {
+    background-color: #1f2937;
+    color: #ffffff;
+  }
+  .dark select option {
+    background-color: #1f2937;
+    color: #ffffff;
+  }
+
+  .dark .shadow-sm,
+  .dark .shadow {
+    box-shadow: 0 1px 3px 0 rgba(0,0,0,0.4);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply text-gray-900 bg-surface-secondary min-h-screen;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer components {
+  .dark .card-shadow {
+    box-shadow: 0 1px 3px 0 rgba(0,0,0,0.4);
+  }
+}
+
+@layer utilities {
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

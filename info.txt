@@ -1,0 +1,327 @@
+================================================================================
+  SPLITMATE — Project Information & Development Guide
+================================================================================
+
+  A React + Vite expense tracker and group expense splitter (Splitwise clone).
+  Indian Rupee (₹) based. Mobile-first responsive design.
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+  1. Project Overview
+  2. Tech Stack
+  3. Complete Source Structure
+  4. How to Run (Local)
+  5. How to Run on Mobile Phone (Same Network)
+  6. How to Build for Production
+  7. How to Preview Production Build
+  8. Available Pages & Routes
+  9. Development Guidelines
+  10. Architecture Notes
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+
+  SplitMate helps users track shared expenses and split bills with friends,
+  roommates, or travel groups. Users can create groups, add expenses with
+  various split types (equal, percentage, exact, shares), view balances,
+  and settle up with minimal transactions.
+
+  Currency: Indian Rupee (₹)
+  Status: All UI screens complete with mock data
+
+================================================================================
+2. TECH STACK
+================================================================================
+
+  - React 18 (JSX)
+  - Vite 5 (build tool)
+  - Tailwind CSS 3 (utility-first CSS framework)
+  - React Router DOM 6 (client-side routing)
+  - Firebase (planned for Phase 2: Auth + Firestore)
+  - PWA (planned for Phase 2)
+  - Capacitor (planned for Phase 3: native Android/iOS)
+
+================================================================================
+3. COMPLETE SOURCE STRUCTURE
+================================================================================
+
+splitmate/
+├── index.html                         # HTML entry, Inter font, viewport meta
+├── package.json                       # Dependencies & scripts
+├── vite.config.js                     # Vite + React plugin config
+├── postcss.config.js                  # PostCSS: Tailwind + Autoprefixer
+├── tailwind.config.js                 # Theme (green primary, INR-friendly)
+├── .gitignore
+├── info.txt                           # ← This file
+│
+└── src/
+    ├── main.jsx                       # Entry: BrowserRouter → App
+    ├── App.jsx                        # Routes + Providers (Auth, Group, Toast)
+    ├── index.css                      # Tailwind directives, base styles
+    │
+    ├── config/
+    │   ├── constants.js               # CATEGORIES, SPLIT_TYPES, GROUP_CATEGORIES,
+    │   │                              #   NAV_ITEMS, DEFAULT_CURRENCY, CURRENCY_SYMBOL
+    │   └── mockData.js                # All mock data (users, groups, expenses,
+    │                                  #   settlements, recent activity)
+    │
+    ├── utils/
+    │   ├── currency.js                # formatCurrency(), formatCurrencyInt(), parseCurrencyInput()
+    │   ├── calculators.js             # Split logic (equal, percentage, exact, shares),
+    │                                  #   computeBalances(), simplifyDebts()
+    │   └── validators.js              # validateEmail(), validatePassword(), etc.
+    │
+    ├── context/
+    │   ├── AuthContext.jsx             # Auth state + signIn, signUp, signOut, signInWithGoogle
+    │   └── GroupContext.jsx            # Groups list, active group, members, expenses, settlements
+    │
+    ├── hooks/
+    │   └── useExpenseCalc.js          # computeBalances + simplifyDebts consumption
+    │
+    ├── layouts/
+    │   ├── AuthLayout.jsx             # Centered card layout for login/signup pages
+    │   └── AppLayout.jsx              # TopNav + content + BottomNav (authenticated shell)
+    │
+    ├── components/
+    │   ├── ui/                        # Reusable primitives (no business logic)
+    │   │   ├── Avatar.jsx             # Image with initials fallback (sm/md/lg/xl)
+    │   │   ├── Badge.jsx              # Colored label (success/danger/warning/primary)
+    │   │   ├── BottomSheet.jsx        # Mobile slide-up panel with backdrop
+    │   │   ├── Button.jsx             # Variants: primary/secondary/ghost/danger + loading
+    │   │   ├── Card.jsx               # Rounded container with optional shadow
+    │   │   ├── ConfirmDialog.jsx      # Confirmation modal for destructive actions
+    │   │   ├── EmptyState.jsx         # Icon + title + description + action slot
+    │   │   ├── Input.jsx              # Text input with label, icon, error, focus ring
+    │   │   ├── LoadingSpinner.jsx     # Spinning loader (inline or overlay)
+    │   │   ├── Modal.jsx              # Centered modal with title, footer, backdrop
+    │   │   └── Toast.jsx              # Toast notifications + ToastContext/Provider
+    │   │
+    │   ├── form/                      # Form-specific components
+    │   │   ├── AmountInput.jsx        # ₹-prefixed numeric input (decimal)
+    │   │   ├── CategoryPicker.jsx     # Grid of category buttons with emoji icons
+    │   │   ├── MemberPicker.jsx       # Multi-select member list with checkboxes
+    │   │   ├── Select.jsx             # Styled dropdown with custom arrow
+    │   │   └── SplitTypeSelector.jsx  # Equal/Percentage/Exact/Shares selection
+    │   │
+    │   ├── navigation/
+    │   │   ├── BottomNav.jsx          # 4-tab fixed bottom bar (Home/Groups/
+    │   │   │                          #   Activity/Profile) with SVG icons
+    │   │   ├── TopNav.jsx             # Sticky header: avatar + greeting + settings
+    │   │   └── ProtectedRoute.jsx     # Auth guard: redirects to /signin if unauthed
+    │   │
+    │   ├── group/
+    │   │   ├── GroupCard.jsx          # Horizontal scroll card (category, name, balance)
+    │   │   ├── GroupBalanceSummary.jsx# Per-member balance display
+    │   │   └── MemberList.jsx         # Member rows with balance
+    │   │
+    │   ├── expense/
+    │   │   └── ExpenseRow.jsx         # Single expense line item
+    │   │
+    │   └── dashboard/
+    │       ├── BalanceSummary.jsx     # Overall owed/owes/net with ₹ formatting
+    │       ├── RecentExpenses.jsx     # Activity feed with category icons
+    │       └── QuickActions.jsx       # FAB + BottomSheet (Add Expense/Group/Settle)
+    │
+    └── pages/
+        ├── auth/
+        │   ├── SignIn.jsx             # Email/password + Google sign-in
+        │   ├── SignUp.jsx             # Registration form with validation
+        │   └── ForgotPassword.jsx     # Password reset email flow
+        │
+        ├── dashboard/
+        │   └── Dashboard.jsx          # Home: balance summary, groups, activity, FAB
+        │
+        ├── groups/
+        │   ├── GroupList.jsx          # All user's groups with balances
+        │   ├── CreateGroup.jsx        # New group form (name, category, description)
+        │   └── GroupDetail.jsx        # Group: members, expenses, balances, settle tabs
+        │
+        ├── expenses/
+        │   ├── AddExpense.jsx         # Full expense form (amount, category, split, etc.)
+        │   ├── ExpenseDetail.jsx      # Expense breakdown with split details
+        │   └── EditExpense.jsx        # Edit amount, description, category
+        │
+        ├── settlements/
+        │   ├── SettleUp.jsx           # Simplified debts + pay/record buttons
+        │   └── SettlementHistory.jsx  # Past settlements log
+        │
+        ├── profile/
+        │   ├── Profile.jsx            # User info, settings menu, sign out
+        │   └── EditProfile.jsx        # Edit name, phone, currency
+        │
+        └── NotFound.jsx               # 404 page
+
+================================================================================
+4. HOW TO RUN (Local Development)
+================================================================================
+
+  Command:  npm run dev
+  URL:      http://localhost:5173
+  Features: Hot Module Replacement (HMR), instant refresh on save
+
+  Requirements:
+    - Node.js >= 18   (verified: v24.11.0)
+    - npm >= 9        (verified: 11.6.1)
+
+  First time setup:
+    1. Open terminal in project folder:
+       cd C:\Users\JarViss\Desktop\Projects\SplitMate
+
+    2. Install dependencies (only needed once):
+       npm install
+
+    3. Start development server:
+       npm run dev
+
+    4. Open browser at:
+       http://localhost:5173
+
+================================================================================
+5. HOW TO RUN ON MOBILE PHONE (Same Network)
+================================================================================
+
+  To view the app on your phone while developing:
+
+  METHOD A — Using Vite's --host flag (Recommended):
+
+    1. Find your computer's local IP address:
+       - Windows: Open Command Prompt and type:  ipconfig
+       - Look for "IPv4 Address" under your active network (e.g., 172.20.10.1)
+
+    2. Start Vite with host flag:
+       npm run dev -- --host
+
+       OR edit package.json "dev" script to:
+       "dev": "vite --host"
+
+    3. Vite will show URLs like:
+       Local:   http://localhost:5173
+       Network: http://172.20.10.1:5173   ← Use this on your phone
+
+    4. On your phone (same Wi-Fi network):
+       - Open Chrome/Safari browser
+       - Type: http://172.20.10.1:5173
+       - The app will load and work normally
+
+  METHOD B — Using ngrok (Public URL, no Wi-Fi needed):
+
+    1. Install ngrok:  https://ngrok.com/download
+
+    2. Start Vite normally:  npm run dev
+
+    3. In a second terminal:  ngrok http 5173
+
+    4. ngrok gives you a public URL like:  https://abc123.ngrok.io
+       Open this URL on your phone from anywhere.
+
+  Note: The app is mobile-first responsive. It works best on phone screens
+  (375px width) and scales up gracefully to desktop.
+
+================================================================================
+6. HOW TO BUILD (Production)
+================================================================================
+
+  Command:  npm run build
+  Output:   dist/ folder (ready to deploy)
+  Size:     ~231 KB JS (68 KB gzip), ~26 KB CSS (5 KB gzip)
+
+  The build:
+    - Bundles all JSX into optimized chunks
+    - Purges unused Tailwind CSS classes
+    - Minifies HTML, CSS, JS
+    - Outputs fingerprinted assets for cache busting
+
+================================================================================
+7. HOW TO PREVIEW PRODUCTION BUILD
+================================================================================
+
+  Command:  npm run preview
+  URL:      http://localhost:4173
+  Serves:  The production build from dist/ (no HMR, simulates production)
+
+================================================================================
+8. AVAILABLE PAGES & ROUTES
+================================================================================
+
+  Path                              Page              Description
+  ──────────────────────────────────────────────────────────────────
+  /signin                           SignIn            Login with email or Google
+  /signup                           SignUp            Create new account
+  /forgot-password                  ForgotPassword    Password reset
+  /dashboard                        Dashboard         Home: balance, groups, activity
+  /groups                           GroupList         All your groups
+  /groups/new                       CreateGroup       Create a new group
+  /groups/:groupId                  GroupDetail       Group: expenses, balances, settle
+  /groups/:groupId/settle           SettleUp          Simplified debt settlement
+  /groups/:groupId/settlements      SettlementHistory Past settlements
+  /expenses/new                     AddExpense        Add new expense (with split)
+  /expenses/:id                     ExpenseDetail     View expense breakdown
+  /expenses/:id/edit                EditExpense       Edit expense details
+  /profile                          Profile           User settings & sign out
+  /profile/edit                     EditProfile       Edit name, phone, etc.
+  *                                 NotFound          404 page
+
+  Protected routes redirect to /signin if not authenticated.
+  Auth context provides mock login (no Firebase yet).
+
+================================================================================
+9. DEVELOPMENT GUIDELINES
+================================================================================
+
+  FILE ORGANIZATION
+    - One component per file, named PascalCase
+    - Pages:     src/pages/<feature>/<Page>.jsx
+    - Components: src/components/<domain>/<Component>.jsx
+    - Utilities:  src/utils/ (pure functions, no React)
+    - Context:    src/context/
+    - Hooks:      src/hooks/
+
+  NAMING
+    - Components/PascalCase: Dashboard, GroupCard
+    - Files/PascalCase: Dashboard.jsx
+    - Functions: camelCase
+    - CSS: Tailwind utility classes only
+
+  COMPONENT RULES
+    - UI primitives (src/components/ui/) have zero business logic
+    - Domain components receive data via props
+    - Business logic lives in pages or hooks
+    - Every component handles loading, empty, and error states
+
+  STATE MANAGEMENT
+    - Local: useState (form inputs, UI toggles)
+    - Global: React Context (auth, groups)
+    - No Redux/Zustand at MVP scale
+
+================================================================================
+10. ARCHITECTURE NOTES
+================================================================================
+
+  LAYERED ARCHITECTURE
+    Pages (orchestrate) → Components (present) → UI Primitives (render)
+    Pages → Context (state) → Mock Data (data)
+
+  CURRENT STATUS
+    - All UI screens built with mock data (no real backend)
+    - Indian Rupee (₹) as default currency
+    - Mobile-first responsive design
+    - Loading skeletons, empty states, error states handled
+    - Toast notifications for user feedback
+    - Auth flow with mock login
+    - Group/expense/settlement CRUD flows
+    - Balance calculation engine (equal/percentage/exact/shares)
+    - Debt simplification algorithm (minimum transactions)
+    - 82 total modules, builds in ~5 seconds
+
+  NEXT PHASE (PLANNED)
+    Phase 2: Firebase Authentication + Firestore integration
+             PWA (manifest, service worker)
+             Push notifications (FCM)
+             Testing (Vitest + Cypress)
+
+    Phase 3: AI spending insights, native mobile (Capacitor),
+             social features, admin panel
+
+================================================================================

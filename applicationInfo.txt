@@ -1,0 +1,522 @@
+============================================================
+  SPLITMATE — Application Documentation
+============================================================
+
+1. PROJECT OVERVIEW
+====================
+
+SplitMate is a local-first expense splitting application that
+helps groups of people track shared expenses and settle debts
+easily. It works entirely offline using your browser's Local
+Storage — no accounts, no server, no internet required.
+
+The app is built with:
+  • React (UI framework)
+  • Vite (build tool)
+  • Tailwind CSS (styling)
+  • Local Storage (data persistence)
+
+============================================================
+2. FEATURES
+============
+
+  ✅ Create Groups — e.g. "Goa Trip", "Roommates", "Couple"
+  ✅ Add Members — just enter a name, no email required
+  ✅ Add Expenses — with description, amount, and category
+  ✅ Split Equally — automatically divides among selected members
+  ✅ View Balances — who owes whom, how much
+  ✅ Settle Up — record payments between members
+  ✅ Settlement History — see past settlements
+  ✅ Dashboard — see overall balance across all groups
+  ✅ Dark Mode — toggle theme, preference saved automatically
+  ✅ Subscription Plans — Free, Starter (₹20), Pro (₹100), Business (₹150)
+  ✅ Group Limits — Free users limited to 5 groups
+  ✅ Dark Mode — toggle in Profile, persists after refresh
+  ✅ Indian Rupee (₹) — default currency
+  ✅ Full Offline — no internet needed, data stays on your device
+  ✅ Duplicate Email Rejection — no duplicate accounts
+  ✅ Vercel Deploy Ready — vercel.json included for one-click deploy
+
+============================================================
+3. FOLDER STRUCTURE
+====================
+
+SplitMate/
+├── index.html                 # Entry HTML file
+├── package.json               # Dependencies and scripts
+├── tailwind.config.js         # Tailwind CSS configuration
+├── vite.config.js             # Vite bundler configuration
+├── info.txt                   # Setup instructions
+├── applicationInfo.txt        # This file
+│
+├── public/                    # Static assets
+│
+└── src/                       # Application source code
+    ├── main.jsx               # App entry point (React root)
+    ├── App.jsx                # Route definitions
+    ├── index.css              # Global styles + CSS variables
+    │
+    ├── config/
+    │   ├── constants.js       # App constants (categories, nav items)
+    │
+    ├── context/
+    │   ├── AuthContext.jsx    # User authentication (local)
+    │   ├── GroupContext.jsx   # Groups, expenses, settlements CRUD
+    │   └── ThemeContext.jsx   # Dark/Light mode management
+    │
+    ├── utils/
+    │   ├── storage.js         # Local Storage CRUD wrapper
+    │   ├── calculators.js     # Split/balance/debt calculation logic
+    │   ├── currency.js        # ₹ currency formatting
+    │   └── validators.js      # Input validation
+    │
+    ├── hooks/
+    │   └── useExpenseCalc.js  # Hook: computes balances + suggestions
+    │
+    ├── layouts/
+    │   ├── AppLayout.jsx      # Main layout (TopNav + BottomNav)
+    │   └── AuthLayout.jsx     # Auth pages layout (centered card)
+    │
+    ├── components/
+    │   ├── ui/                # Reusable UI primitives
+    │   │   ├── Avatar.jsx
+    │   │   ├── Badge.jsx
+    │   │   ├── BottomSheet.jsx
+    │   │   ├── Button.jsx
+    │   │   ├── Card.jsx
+    │   │   ├── ConfirmDialog.jsx
+    │   │   ├── EmptyState.jsx
+    │   │   ├── Input.jsx
+    │   │   ├── LoadingSpinner.jsx
+    │   │   ├── Modal.jsx
+    │   │   └── Toast.jsx
+    │   ├── form/              # Form-specific components
+    │   │   ├── AmountInput.jsx
+    │   │   ├── CategoryPicker.jsx
+    │   │   ├── MemberPicker.jsx
+    │   │   ├── Select.jsx
+    │   │   └── SplitTypeSelector.jsx
+    │   ├── navigation/
+    │   │   ├── TopNav.jsx     # Top bar with greeting + avatar
+    │   │   ├── BottomNav.jsx  # Bottom tab navigation
+    │   │   └── ProtectedRoute.jsx
+    │   ├── dashboard/
+    │   │   ├── BalanceSummary.jsx  # Overall balance card
+    │   │   ├── RecentExpenses.jsx  # Recent activity list
+    │   │   └── QuickActions.jsx    # FAB + bottom sheet
+    │   ├── group/
+    │   │   ├── GroupCard.jsx
+    │   │   ├── GroupBalanceSummary.jsx
+    │   │   └── MemberList.jsx
+    │   └── expense/
+    │       └── ExpenseRow.jsx
+    │
+    └── pages/
+        ├── auth/
+        │   ├── SignIn.jsx
+        │   ├── SignUp.jsx
+        │   └── ForgotPassword.jsx
+        ├── dashboard/
+        │   └── Dashboard.jsx
+        ├── groups/
+        │   ├── GroupList.jsx
+        │   ├── CreateGroup.jsx
+        │   └── GroupDetail.jsx
+        ├── expenses/
+        │   ├── AddExpense.jsx
+        │   ├── ExpenseDetail.jsx
+        │   └── EditExpense.jsx
+        ├── settlements/
+        │   ├── SettleUp.jsx
+        │   └── SettlementHistory.jsx
+        ├── profile/
+        │   ├── Profile.jsx
+        │   └── EditProfile.jsx
+        └── NotFound.jsx
+
+============================================================
+4. USER FLOW
+=============
+
+1. OPEN the app → Sign In page appears
+2. SIGN UP with name, email, password → auto logged in
+3. DASHBOARD shows your overall balance and groups
+4. CREATE A GROUP → "Goa Trip" → auto-added as admin
+5. ADD MEMBERS → type names (Sanket, Rahul, Amit)
+6. ADD EXPENSE → ₹3000 for Hotel → split equally
+7. VIEW BALANCES → see Rahul owes ₹1000, Amit owes ₹1000
+8. SETTLE UP → record payment when Rahul pays Sanket
+9. VIEW SETTLEMENT HISTORY → see all past settlements
+
+All data persists automatically in your browser. No save button
+needed. Refresh the page — everything stays.
+
+============================================================
+5. DASHBOARD EXPLANATION
+=========================
+
+The Dashboard is the home screen. It shows:
+
+  ┌─────────────────────────────────────┐
+  │  OVERALL BALANCE                     │
+  │  ─────────────────────────────────   │
+  │  💰 Total Expenses    ₹10,000        │
+  │  💳 You Paid          ₹6,000         │
+  │  ─────────────────────────────────   │
+  │  📈 You Receive       +₹4,000        │
+  │     Others owe you                   │
+  │  📉 You Owe           -₹2,000        │
+  │     To other members                 │
+  │  ─────────────────────────────────   │
+  │  Net Balance          +₹2,000        │
+  │  You are owed ₹2,000 overall         │
+  └─────────────────────────────────────┘
+
+  • Total Expenses: Sum of ALL expenses across all groups.
+  • You Paid: Sum of all expenses where you were the payer.
+  • You Receive: Total amount others owe you (calculated from
+    each group's balance).
+  • You Owe: Total amount you owe others (calculated from
+    each group's balance).
+  • Net Balance: (You Receive) - (You Owe). Positive means
+    others owe you more than you owe them.
+
+Below the balance card:
+  • Your Groups — horizontal scrolling list of all groups.
+  • Recent Activity — last 10 expenses and settlements.
+
+At the bottom:
+  • Quick Action (+) button — add expense, create group,
+    or settle up.
+
+============================================================
+6. EXPENSE CALCULATION LOGIC
+==============================
+
+When you add an expense, SplitMate stores:
+  • Amount (e.g. ₹3000)
+  • Who paid (e.g. Sanket)
+  • Split type and details
+
+EQUAL SPLIT EXAMPLE:
+  Expense: Hotel = ₹3000
+  Paid by: Sanket
+  Split among: Sanket, Rahul, Amit (3 people)
+  Each share: ₹3000 ÷ 3 = ₹1000
+
+  Effect:
+  • Sanket paid ₹3000, but owes ₹1000 (his share)
+  → Sanket is owed ₹2000 total
+  • Rahul owes ₹1000 (his share)
+  • Amit owes ₹1000 (his share)
+
+BALANCE COMPUTATION:
+  For each person in a group:
+    1. Start with balance = 0
+    2. Add the amount of each expense they paid
+    3. Subtract their share from each expense
+    4. Add completed settlements they sent
+    5. Subtract completed settlements they received
+
+  Balance > 0 → person is owed money
+  Balance < 0 → person owes money
+  Balance = 0 → all settled up
+
+============================================================
+7. SETTLEMENT LOGIC
+=====================
+
+When you settle up:
+
+  1. The app shows suggested payments based on current balances
+     (simplified to minimize number of transactions).
+  2. You tap "Pay" or "Record" to record a settlement.
+  3. The settlement is stored as a record with:
+     • From: who paid
+     • To: who received
+     • Amount
+     • Status: "completed"
+  4. Balances are recalculated considering settlements.
+  5. The group shows updated balances.
+
+  DEBT SIMPLIFICATION:
+  Instead of everyone paying everyone else, SplitMate finds the
+  minimal set of payments to settle all debts.
+
+  Example:
+    • Sanket is owed ₹1000 by Rahul and ₹1000 by Amit
+    Instead of two payments, the app may suggest:
+      Rahul → Sanket ₹1000
+      Amit → Sanket ₹1000
+    (This is already optimal in this case)
+
+============================================================
+8. LOCAL STORAGE STRUCTURE
+============================
+
+All data is stored in your browser's Local Storage with the
+prefix "splitmate_". Here are the keys and their contents:
+
+  Key: splitmate_users
+  Value: Array of user objects
+    { id, displayName, email, password, photoURL, phone,
+      defaultCurrency, createdAt }
+
+  Key: splitmate_groups
+  Value: Array of group objects
+    { id, name, category, description, createdBy, currency,
+      inviteCode, createdAt }
+
+  Key: splitmate_members
+  Value: Array of member objects
+    { id, groupId, userId, displayName, role, createdAt }
+    (role is "admin" for creator, "member" for others)
+
+  Key: splitmate_expenses
+  Value: Array of expense objects
+    { id, groupId, description, amount, paidBy, date, category,
+      splitType, splitDetails, createdAt }
+    splitDetails is an object: { userId1: share1, userId2: share2 }
+
+  Key: splitmate_settlements
+  Value: Array of settlement objects
+    { id, groupId, fromUserId, toUserId, amount, note, status,
+      settledAt, createdAt }
+    (status is "completed" after settlement is recorded)
+
+  Key: splitmate_session
+  Value: Single user ID string (current logged-in user)
+
+  Key: splitmate_theme
+  Value: "light" or "dark"
+
+  Key: splitmate_<collection>
+  Value: Always an array of objects with unique "id" fields.
+
+  Note: All IDs are auto-generated strings. All objects have
+  a "createdAt" timestamp.
+
+============================================================
+9. ROUTES
+==========
+
+  Route                    Page
+  ───────────────────────────────────────────
+  /signin                  Sign In
+  /signup                  Sign Up
+  /forgot-password         Forgot Password
+  /dashboard               Dashboard (home)
+  /groups                  Group List
+  /groups/new              Create Group
+  /groups/:id              Group Detail
+  /groups/:id/settle       Settle Up
+  /groups/:id/settlements  Settlement History
+  /expenses/new            Add Expense
+  /expenses/:id            Expense Detail
+  /expenses/:id/edit       Edit Expense
+  /profile                 Profile
+  /profile/edit            Edit Profile
+  /                        Redirects to /dashboard
+  *                        404 Not Found
+
+============================================================
+10. FUTURE FIREBASE PLAN
+=========================
+
+When moving to Firebase (cloud):
+
+  1. Create a Firebase project at https://console.firebase.com
+  2. Enable Authentication (email/password + Google)
+  3. Create Firestore database
+  4. Replace storage.js with Firebase SDK calls
+  5. Add real-time listeners (onSnapshot)
+  6. Add image upload for avatars (Firebase Storage)
+  7. Deploy to Firebase Hosting
+
+Key changes:
+  • store.add()    → firebase.firestore().collection().add()
+  • store.get()    → firebase.firestore().doc().get()
+  • store.update() → firebase.firestore().doc().update()
+  • store.remove() → firebase.firestore().doc().delete()
+  • store.where()  → firebase.firestore().collection().where()
+
+Schema maps directly — same field names, just stored in
+Firestore collections instead of Local Storage.
+
+============================================================
+11. FUTURE PREMIUM FEATURES
+=============================
+
+  🔐 Cloud Sync — Access your data from any device
+  👥 Multiple Currencies — USD, EUR, GBP, etc.
+  📷 Receipt Scanning — OCR to auto-parse expense amounts
+  📊 Spending Reports — charts and export to CSV/PDF
+  🔔 Push Notifications — when someone adds an expense
+  🔗 Share Invite Links — join groups via link
+  💬 In-app Chat — discuss expenses within group
+  🏷️ Tags & Filters — organize expenses by custom tags
+  ⏰ Recurring Expenses — monthly rent, utilities, etc.
+  📱 Mobile Apps — native iOS and Android versions
+
+============================================================
+12. TEST SCENARIOS
+===================
+
+To verify the app is working correctly, follow these scenarios:
+
+SCENARIO 1: Basic Equal Split
+------------------------------
+1. Sign up as "Sanket"
+2. Create group "Goa Trip"
+3. Add members: "Rahul", "Amit"
+4. Add expense: Hotel = ₹3000, paid by Sanket, split equally
+5. Expected: Sanket balance = +₹2000, Rahul = -₹1000, Amit
+   = -₹1000
+6. Settle up: Record Rahul → Sanket ₹1000
+7. Verify: Sanket balance = +₹1000, Rahul = 0
+8. Settle: Record Amit → Sanket ₹1000
+9. Verify: All balances = 0
+
+SCENARIO 2: Multiple Expenses
+------------------------------
+1. Create group "Roommates"
+2. Add members: "Alex", "Sam"
+3. Add expense: Electricity Bill = ₹2000, paid by Alex
+4. Expected: Alex = +₹1000, Sam = -₹1000
+5. Add expense: Groceries = ₹1500, paid by Sam
+6. Expected: Alex = +₹1000 - ₹750 = +₹250,
+             Sam = -₹1000 + ₹750 = -₹250
+7. Suggested settlement: Sam pays Alex ₹250
+8. Record settlement → all zero
+
+SCENARIO 3: Dashboard Verification
+-----------------------------------
+1. Create two groups with different members
+2. Add expenses across groups
+3. Verify Dashboard shows:
+   - Total Expenses = sum of all expenses
+   - You Paid = sum of expenses you paid
+   - Net Balance correctly computed across groups
+
+SCENARIO 4: Data Persistence
+-----------------------------
+1. Create a group, add members, add expenses
+2. Refresh the browser (F5)
+3. Verify all data still exists
+4. Verify dark mode preference is remembered
+
+SCENARIO 5: Guest Members
+---------------------------
+1. Create group "Weekend Trip"
+2. Add member "Priya" — no email needed
+3. Add expense: Fuel = ₹2000, paid by you
+4. Verify Priya shows in member list and balance = -₹1000
+
+============================================================
+13. NEW TEST SCENARIOS
+========================
+
+SCENARIO 6: Group Limit Validation (Free Plan)
+------------------------------------------------
+1. Sign up as a new user (Free plan = max 5 groups)
+2. Create 5 groups successfully
+3. Try to create a 6th group
+4. Expected: Error message "You have reached your Free plan
+   limit of 5 groups. Please upgrade your subscription."
+5. Group creation is blocked
+
+SCENARIO 7: Subscription Upgrade Flow
+---------------------------------------
+1. After hitting group limit, tap "Upgrade" in the error
+   card or navigate to /subscription
+2. View all 4 plans: Free, Starter (₹20), Pro (₹100),
+   Business (₹150)
+3. Tap "Upgrade to Pro" button
+4. Expected: Toast "Upgraded to Pro plan! ₹100 charged."
+5. Plan shows as "Current Plan" with green ring
+6. Dashboard subscription card shows "Pro" badge and
+   "30 groups" limit
+7. Can now create up to 30 groups
+
+SCENARIO 8: Duplicate Email Validation
+---------------------------------------
+1. Sign up with email "test@example.com"
+2. Sign out
+3. Try to sign up again with the same email
+4. Expected: Error "This email is already registered.
+   Please login instead."
+5. User cannot create duplicate account
+
+SCENARIO 9: Registration Validation
+---------------------------------------
+1. Leave Name empty → Error "Please enter your name"
+2. Leave Email empty → Error "Please enter your email
+   address"
+3. Enter "invalid-email" → Error "Please enter a valid
+   email address"
+4. Enter password with < 6 chars → Error "Password must
+   be at least 6 characters"
+5. Enter valid data → Account created, redirected to
+   Dashboard
+
+SCENARIO 10: Dark Mode Testing
+--------------------------------
+1. Go to Profile page
+2. Tap "Dark Mode" button → theme switches to dark
+3. Verify all pages render correctly:
+   - Dashboard cards and text are readable
+   - Group list items are visible
+   - Expense form inputs have proper contrast
+   - Badges (green/red/yellow) are visible
+   - Navigation bar is readable
+   - Modal and BottomSheet have correct colors
+4. Refresh page → dark mode persists
+5. Tap "Light Mode" → switches back
+
+SCENARIO 11: Mobile / Vercel Testing
+--------------------------------------
+1. Deploy to Vercel using `npx vercel`
+2. Open on Android phone browser
+3. Verify:
+   - Sign up and create a group works
+   - Bottom navigation is tappable
+   - Quick Action (+) button is reachable
+   - Forms are usable with touch keyboard
+   - Dark mode toggle works
+   - Data persists after browser close/reopen
+
+============================================================
+14. DEPLOYMENT GUIDE (Vercel)
+===============================
+
+Prerequisites:
+  • Node.js installed
+  • Git installed
+  • A Vercel account (free at https://vercel.com)
+
+Steps:
+  1. Open terminal in the SplitMate folder
+  2. Run: npm install
+  3. Run: npm run build
+     (Verify build succeeds with no errors)
+  4. Install Vercel CLI: npm install -g vercel
+  5. Run: vercel login
+     (Follow browser prompt to authenticate)
+  6. Run: vercel
+     (Select: Yes to build, Yes to deploy)
+  7. Vercel will provide a URL like:
+     https://splitmate-xxx.vercel.app
+  8. Open the URL on your phone to test
+
+Alternative (without CLI):
+  1. Push your code to a GitHub repository
+  2. Go to https://vercel.com/new
+  3. Import your GitHub repository
+  4. Vercel auto-detects Vite framework
+  5. Click "Deploy"
+  6. Your app is live at a .vercel.app URL
+
+The vercel.json file in the project root ensures:
+  • SPA routing works (all routes redirect to index.html)
+  • Build command is set to "npm run build"
+  • Output directory is "dist"
