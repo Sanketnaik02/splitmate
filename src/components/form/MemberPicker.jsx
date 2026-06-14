@@ -20,7 +20,7 @@ export default function MemberPicker({ members, selectedIds = [], onChange, labe
               type="button"
               onClick={() => toggle(member.userId)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
-                isSelected ? 'border-primary-500 bg-primary-50' : 'border-gray-100 hover:bg-gray-50'
+                isSelected ? 'border-primary-500 bg-primary-50' : 'border-gray-100 dark:border-gray-700 hover:bg-gray-50'
               }`}
             >
               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${

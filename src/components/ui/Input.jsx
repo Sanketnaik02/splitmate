@@ -9,12 +9,12 @@ export default function Input({ label, error, icon, type = 'text', className = '
         <label className="block text-sm font-medium text-gray-700">{label}</label>
       )}
       <div className={`relative flex items-center border rounded-xl transition-all bg-white dark:bg-gray-100 ${focused ? 'border-primary-500 ring-2 ring-primary-500/20' : error ? 'border-red-300' : 'border-gray-200'} ${className}`}>
-        {icon && <span className="absolute left-3 text-gray-400 text-lg">{icon}</span>}
+        {icon && <span className="absolute left-3 text-gray-500 dark:text-gray-300 text-lg">{icon}</span>}
         <input
           type={type}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          className={`w-full bg-transparent px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none ${icon ? 'pl-10' : ''}`}
+          className={`w-full bg-transparent px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 outline-none ${icon ? 'pl-10' : ''}`}
           {...props}
         />
       </div>

@@ -1,7 +1,7 @@
 const variants = {
   primary: 'bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 shadow-sm',
   secondary: 'bg-white dark:bg-gray-100 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600',
-  ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 active:bg-gray-200',
+  ghost: 'bg-transparent text-gray-700 dark:text-gray-200 hover:bg-gray-100 active:bg-gray-200',
   danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm dark:hover:bg-red-400 dark:active:bg-red-300',
 };
 

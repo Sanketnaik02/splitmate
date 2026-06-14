@@ -71,7 +71,7 @@ export default function ResetPassword() {
           <Button type="submit" fullWidth loading={submitting} disabled={submitting}>Update Password</Button>
         </form>
       ) : (
-        <p className="text-sm text-gray-400 text-center py-4">Please wait...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-300 text-center py-4">Please wait...</p>
       )}
     </AuthLayout>
   );

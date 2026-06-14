@@ -63,7 +63,7 @@ export default function ForgotPassword() {
           <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">✅</span>
           </div>
-          <p className="text-sm text-gray-600 mb-4">Check your email for the reset link.</p>
+          <p className="text-sm text-gray-700 dark:text-gray-200 mb-4">Check your email for the reset link.</p>
           <Button fullWidth variant="secondary" onClick={() => setSent(false)}>Send again</Button>
         </div>
       ) : (

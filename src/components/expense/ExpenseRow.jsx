@@ -11,11 +11,11 @@ export default function ExpenseRow({ expense, onClick }) {
         {categoryIcons[expense.category] || '📋'}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{expense.description}</p>
-        <p className="text-xs text-gray-500 mt-0.5">Paid by {expense.paidByName}</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{expense.description}</p>
+        <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">Paid by {expense.paidByName}</p>
       </div>
       <div className="text-right flex-shrink-0">
-        <p className="text-sm font-semibold text-gray-900">{formatCurrency(expense.amount)}</p>
+        <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrency(expense.amount)}</p>
       </div>
     </div>
   );

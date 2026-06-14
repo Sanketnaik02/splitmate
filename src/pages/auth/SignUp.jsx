@@ -74,9 +74,9 @@ export default function SignUp() {
           <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">✉️</span>
           </div>
-          <p className="text-sm text-gray-600 mb-1">We sent a confirmation link to:</p>
-          <p className="text-sm font-semibold text-gray-900 mb-4">{email}</p>
-          <p className="text-xs text-gray-400">Click the link in the email to activate your account, then sign in.</p>
+          <p className="text-sm text-gray-700 dark:text-gray-200 mb-1">We sent a confirmation link to:</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-white mb-4">{email}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-300">Click the link in the email to activate your account, then sign in.</p>
         </div>
       </AuthLayout>
     );
@@ -95,8 +95,8 @@ export default function SignUp() {
         <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" icon="🔒" />
         <Button type="submit" fullWidth loading={submitting} disabled={submitting}>Create Account</Button>
         <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100" /></div>
-          <div className="relative flex justify-center"><span className="bg-white dark:bg-gray-100 px-3 text-xs text-gray-400">or</span></div>
+          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100 dark:border-gray-700" /></div>
+          <div className="relative flex justify-center"><span className="bg-white dark:bg-gray-100 px-3 text-xs text-gray-500 dark:text-gray-300">or</span></div>
         </div>
         <Button type="button" variant="secondary" fullWidth icon={
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">

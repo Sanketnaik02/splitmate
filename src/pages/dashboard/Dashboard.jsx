@@ -27,7 +27,7 @@ function BalanceSkeleton() {
           <div className="w-16 h-4 bg-gray-200 rounded animate-pulse" />
         </div>
       ))}
-      <div className="pt-3 mt-3 border-t border-gray-100">
+      <div className="pt-3 mt-3 border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="w-12 h-4 bg-gray-200 rounded animate-pulse" />
           <div className="w-20 h-6 bg-gray-200 rounded animate-pulse" />
@@ -135,7 +135,7 @@ export default function Dashboard() {
             <div className="w-24 h-4 bg-gray-200 rounded animate-pulse mb-3" />
             <div className="flex gap-3 overflow-x-auto no-scrollbar">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="min-w-[200px] bg-white dark:bg-gray-50 rounded-2xl p-4 shadow-sm flex-shrink-0">
+                <div key={i} className="min-w-[200px] bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm flex-shrink-0">
                   <div className="w-10 h-10 rounded-xl bg-gray-200 animate-pulse mb-3" />
                   <div className="w-28 h-4 bg-gray-200 rounded animate-pulse mb-2" />
                   <div className="w-20 h-3 bg-gray-200 rounded animate-pulse" />
@@ -145,7 +145,7 @@ export default function Dashboard() {
           </div>
           <div>
             <div className="w-24 h-4 bg-gray-200 rounded animate-pulse mb-3" />
-            <div className="bg-white dark:bg-gray-50 rounded-2xl shadow-sm divide-y divide-gray-100 dark:divide-gray-800">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm divide-y divide-gray-100 dark:divide-gray-700">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex items-center gap-3 px-4 py-3.5">
                   <div className="w-9 h-9 rounded-xl bg-gray-200 animate-pulse" />
@@ -176,12 +176,12 @@ export default function Dashboard() {
       <div className="space-y-5 pt-1">
         <Card padding="p-4" elevated>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Subscription</h2>
+            <h2 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Subscription</h2>
             <Badge variant={plan.id === 'free' ? 'default' : 'primary'} size="sm">{plan.name}</Badge>
           </div>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-sm text-gray-600">Groups Used</span>
-            <span className="text-sm font-semibold text-gray-900">{groupCount} / {plan.maxGroups}</span>
+            <span className="text-sm text-gray-700 dark:text-gray-200">Groups Used</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">{groupCount} / {plan.maxGroups}</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-1.5 mb-3 overflow-hidden">
             <div
@@ -190,7 +190,7 @@ export default function Dashboard() {
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400">{remaining > 0 ? `${remaining} remaining` : 'No groups left'}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-300">{remaining > 0 ? `${remaining} remaining` : 'No groups left'}</span>
             {plan.id === 'free' && (
               <Button size="sm" variant="ghost" onClick={() => navigate('/subscription')}>Upgrade</Button>
             )}
@@ -208,8 +208,8 @@ export default function Dashboard() {
         {groups.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Your Groups</h2>
-              <button onClick={() => navigate('/groups')} className="text-xs font-medium text-primary-600">See All</button>
+              <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Your Groups</h2>
+              <button onClick={() => navigate('/groups')} className="text-xs font-medium text-primary-600 dark:text-primary-500">See All</button>
             </div>
             <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-5 px-5">
               {groups.map((group) => (
@@ -228,13 +228,13 @@ export default function Dashboard() {
         )}
 
         {groups.length === 0 && (
-          <div className="text-center py-8 bg-white dark:bg-gray-50 rounded-2xl shadow-sm">
+          <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
             <p className="text-4xl mb-2">👋</p>
-            <p className="text-gray-500 font-medium">Welcome to SplitMate!</p>
-            <p className="text-sm text-gray-400 mt-1">Create your first group to get started</p>
+            <p className="text-gray-600 dark:text-gray-300 font-medium">Welcome to SplitMate!</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">Create your first group to get started</p>
             <button
               onClick={() => navigate('/groups/new')}
-              className="mt-4 px-5 py-2.5 bg-primary-600 text-white dark:text-gray-900 rounded-xl text-sm font-medium shadow-sm"
+              className="mt-4 px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium shadow-sm"
             >
               Create Group
             </button>

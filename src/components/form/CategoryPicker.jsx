@@ -13,7 +13,7 @@ export default function CategoryPicker({ value, onChange }) {
             className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border transition-all ${
               value === cat.id
                 ? 'border-primary-500 bg-primary-50 text-primary-700'
-                : 'border-gray-100 bg-gray-50 text-gray-500 hover:bg-gray-100'
+                : 'border-gray-100 dark:border-gray-700 bg-gray-50 text-gray-600 dark:text-gray-300 hover:bg-gray-100'
             }`}
           >
             <span className="text-xl">{cat.icon}</span>

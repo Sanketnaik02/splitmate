@@ -25,8 +25,8 @@ export default function SplitTypeSelector({ value, onChange }) {
           >
             <span className="text-lg mt-0.5">{opt.icon}</span>
             <div>
-              <p className={`text-sm font-medium ${value === opt.id ? 'text-primary-700' : 'text-gray-900'}`}>{opt.label}</p>
-              <p className="text-[11px] text-gray-400 leading-tight mt-0.5">{opt.desc}</p>
+              <p className={`text-sm font-medium ${value === opt.id ? 'text-primary-700' : 'text-gray-900 dark:text-white'}`}>{opt.label}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-300 leading-tight mt-0.5">{opt.desc}</p>
             </div>
           </button>
         ))}

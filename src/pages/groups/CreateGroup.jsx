@@ -54,21 +54,21 @@ export default function CreateGroup() {
     <AppLayout userName={user?.displayName || 'User'}>
       <div className="pt-1">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+          <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-200">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
-          <h1 className="text-xl font-bold text-gray-900">Create Group</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Create Group</h1>
         </div>
 
         <Card padding="p-3" className={`mb-4 flex items-center justify-between ${isLastFreeGroup ? 'border-amber-200 ring-1 ring-amber-200 dark:border-amber-700 dark:ring-amber-700' : ''}`}>
           <div>
             <div className="flex items-center gap-2">
-              <p className="text-xs text-gray-500">Your Plan: <span className="font-semibold text-gray-700">{plan.icon} {plan.name}</span></p>
+              <p className="text-xs text-gray-600 dark:text-gray-300">Your Plan: <span className="font-semibold text-gray-700 dark:text-gray-200">{plan.icon} {plan.name}</span></p>
               {isLastFreeGroup && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">1 left</span>}
             </div>
-            <p className="text-xs text-gray-400 mt-0.5">Groups: {groupCount} / {plan.maxGroups}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">Groups: {groupCount} / {plan.maxGroups}</p>
           </div>
           <Button size="sm" variant="ghost" onClick={() => navigate('/subscription')}>Upgrade</Button>
         </Card>
@@ -95,8 +95,8 @@ export default function CreateGroup() {
           }
         >
           <div className="space-y-3">
-            <p className="text-sm text-gray-700">You are about to use your final available group under the <strong>Free Plan</strong>.</p>
-            <p className="text-sm text-gray-600">After this group, you will need to upgrade to continue creating new groups.</p>
+            <p className="text-sm text-gray-700 dark:text-gray-200">You are about to use your final available group under the <strong>Free Plan</strong>.</p>
+            <p className="text-sm text-gray-700 dark:text-gray-200">After this group, you will need to upgrade to continue creating new groups.</p>
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
               <p className="text-xs text-amber-800 font-medium">Our plans start from only ₹20.</p>
             </div>
@@ -113,10 +113,10 @@ export default function CreateGroup() {
           }
         >
           <div className="space-y-3">
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-gray-700 dark:text-gray-200">
               You have reached your <strong>{plan.name}</strong> plan limit of <strong>{plan.maxGroups} groups</strong>.
             </p>
-            <p className="text-sm text-gray-600">Upgrade your plan to create additional groups.</p>
+            <p className="text-sm text-gray-700 dark:text-gray-200">Upgrade your plan to create additional groups.</p>
           </div>
         </Modal>
       </div>

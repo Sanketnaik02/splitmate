@@ -15,7 +15,7 @@ function getCategoryIcon(categoryId) {
 export default function RecentExpenses({ expenses = [] }) {
   if (expenses.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-400 text-sm">
+      <div className="text-center py-8 text-gray-500 dark:text-gray-300 text-sm">
         <p className="text-3xl mb-2">📭</p>
         <p>No recent activity</p>
       </div>
@@ -24,8 +24,8 @@ export default function RecentExpenses({ expenses = [] }) {
 
   return (
     <div>
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Recent Activity</h2>
-      <div className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-50 rounded-2xl shadow-sm">
+      <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-3">Recent Activity</h2>
+      <div className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
         {expenses.map((expense) => {
           const typeInfo = expenseIcons[expense.type] || expenseIcons.owed;
           return (
@@ -34,8 +34,8 @@ export default function RecentExpenses({ expenses = [] }) {
                 {expense.type === 'settlement' ? '✅' : getCategoryIcon(expense.category)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{expense.description}</p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{expense.description}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
                   {expense.type === 'settlement'
                     ? `Settled · ${expense.groupName}`
                     : `${expense.paidByName} · ${expense.groupName}`
@@ -47,7 +47,7 @@ export default function RecentExpenses({ expenses = [] }) {
                   {expense.type === 'owe' ? '-' : '+'}{formatCurrency(expense.amount)}
                 </p>
                 {expense.userShare && (
-                  <p className="text-[11px] text-gray-400">Your share: {formatCurrency(expense.userShare)}</p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-300">Your share: {formatCurrency(expense.userShare)}</p>
                 )}
               </div>
             </div>

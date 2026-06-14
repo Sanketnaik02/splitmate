@@ -67,8 +67,8 @@ export default function SignIn() {
         </div>
         <Button type="submit" fullWidth loading={submitting} disabled={submitting}>Sign In</Button>
         <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100" /></div>
-          <div className="relative flex justify-center"><span className="bg-white dark:bg-gray-100 px-3 text-xs text-gray-400">or</span></div>
+          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100 dark:border-gray-700" /></div>
+          <div className="relative flex justify-center"><span className="bg-white dark:bg-gray-100 px-3 text-xs text-gray-500 dark:text-gray-300">or</span></div>
         </div>
         <Button type="button" variant="secondary" fullWidth icon={
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">

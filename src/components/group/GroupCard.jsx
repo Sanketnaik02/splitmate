@@ -23,8 +23,8 @@ export default function GroupCard({ name, memberCount, totalExpenses, balance, c
           {balance >= 0 ? '+' : ''}{formatCurrency(Math.abs(balance))}
         </Badge>
       </div>
-      <h3 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-1">{name}</h3>
-      <div className="flex items-center gap-3 text-xs text-gray-500">
+      <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 line-clamp-1">{name}</h3>
+      <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-300">
         <span>{memberCount} members</span>
         <span>{formatCurrencyInt(totalExpenses)} total</span>
       </div>

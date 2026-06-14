@@ -77,27 +77,27 @@ export default function ApplicationGuide() {
     <AppLayout userName={user?.displayName || 'User'}>
       <div className="pt-1">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate('/profile')} className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+          <button onClick={() => navigate('/profile')} className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-200">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
-          <h1 className="text-xl font-bold text-gray-900">Application Guide</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Application Guide</h1>
         </div>
 
         <div className="space-y-4">
           {sections.map((section, i) => (
-            <div key={i} className="bg-white dark:bg-gray-50 rounded-2xl shadow-sm p-4">
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4">
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-2xl">{section.icon}</span>
-                <h2 className="text-base font-bold text-gray-900">{section.title}</h2>
+                <h2 className="text-base font-bold text-gray-900 dark:text-white">{section.title}</h2>
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed mb-2">{section.content}</p>
+              <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed mb-2">{section.content}</p>
 
               {section.steps && (
                 <ol className="space-y-1.5 ml-1">
                   {section.steps.map((step, j) => (
-                    <li key={j} className="text-sm text-gray-600 flex items-start gap-2">
+                    <li key={j} className="text-sm text-gray-700 dark:text-gray-200 flex items-start gap-2">
                       <span className="w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-xs font-semibold flex items-center justify-center flex-shrink-0 mt-0.5">{j + 1}</span>
                       <span>{step}</span>
                     </li>
@@ -110,7 +110,7 @@ export default function ApplicationGuide() {
                   {section.items.map((item, j) => (
                     <div key={j} className="text-sm">
                       <span className="font-semibold text-gray-700">{item.label}:</span>{' '}
-                      <span className="text-gray-600">{item.desc}</span>
+                      <span className="text-gray-700 dark:text-gray-200">{item.desc}</span>
                     </div>
                   ))}
                 </div>

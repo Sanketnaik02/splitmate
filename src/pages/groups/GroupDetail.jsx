@@ -87,7 +87,7 @@ export default function GroupDetail() {
   if (!activeGroup) {
     return (
       <AppLayout userName={user?.displayName || 'User'}>
-        <div className="text-center py-16"><p className="text-4xl mb-3">🔍</p><p className="text-gray-500 font-medium">Group not found</p></div>
+        <div className="text-center py-16"><p className="text-4xl mb-3">🔍</p><p className="text-gray-600 dark:text-gray-300 font-medium">Group not found</p></div>
       </AppLayout>
     );
   }
@@ -98,20 +98,20 @@ export default function GroupDetail() {
     <AppLayout userName={user?.displayName || 'User'}>
       <div className="pt-1">
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={() => navigate('/groups')} className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+          <button onClick={() => navigate('/groups')} className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-200">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-gray-900">{activeGroup.name}</h1>
-            <p className="text-xs text-gray-500">{members.length} members · {formatCurrency(expenses.reduce((s, e) => s + e.amount, 0))} total</p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">{activeGroup.name}</h1>
+            <p className="text-xs text-gray-600 dark:text-gray-300">{members.length} members · {formatCurrency(expenses.reduce((s, e) => s + e.amount, 0))} total</p>
           </div>
         </div>
 
         <Card padding="p-0" className="mb-4 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Members</p>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+            <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Members</p>
             <button onClick={() => setShowInvite(!showInvite)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 active:bg-primary-800 active:scale-95 transition-all shadow-sm">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Add Member
@@ -119,7 +119,7 @@ export default function GroupDetail() {
           </div>
           <MemberList members={members} onRemoveMember={isAdmin ? handleRemoveMember : undefined} />
           {showInvite && (
-            <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex gap-2">
+            <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex gap-2">
               <input
                 value={inviteName}
                 onChange={(e) => setInviteName(e.target.value)}
@@ -145,7 +145,7 @@ export default function GroupDetail() {
                 setTab(t.id);
               }}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
-                tab === t.id ? 'bg-primary-600 text-white dark:text-gray-900 shadow-sm' : 'bg-white dark:bg-gray-100 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                tab === t.id ? 'bg-primary-600 text-white shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               {t.label}
@@ -154,11 +154,11 @@ export default function GroupDetail() {
         </div>
 
         {tab === 'expenses' && (
-          <div className="bg-white dark:bg-gray-50 rounded-2xl shadow-sm divide-y divide-gray-100 dark:divide-gray-800">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm divide-y divide-gray-100 dark:divide-gray-700">
             {expenses.length === 0 ? (
               <div className="text-center py-10">
                 <p className="text-3xl mb-2">💸</p>
-                <p className="text-sm text-gray-500">No expenses yet</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">No expenses yet</p>
                 <Button size="sm" className="mt-3" onClick={() => navigate(`/expenses/new?group=${groupId}`)}>Add Expense</Button>
               </div>
             ) : (
@@ -193,16 +193,16 @@ export default function GroupDetail() {
 
         {tab === 'balances' && (
           <Card padding="p-0" className="overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Who owes what</p>
+            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+              <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Who owes what</p>
             </div>
             <GroupBalanceSummary balances={balances} members={members} />
             {suggestedPayments.length > 0 && (
-              <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Suggested Payments</p>
+              <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-b-2xl">
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-2">Suggested Payments</p>
                 <div className="space-y-1.5">
                   {suggestedPayments.map((p, i) => (
-                    <p key={i} className="text-sm text-gray-700">
+                    <p key={i} className="text-sm text-gray-700 dark:text-gray-200">
                       <span className="font-medium">{getMemberName(p.from)}</span> → <span className="font-medium">{getMemberName(p.to)}</span> {formatCurrency(p.amount)}
                     </p>
                   ))}

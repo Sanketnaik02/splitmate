@@ -17,7 +17,7 @@ export default function GroupList() {
     <AppLayout userName={user?.displayName || 'User'}>
       <div className="pt-1 space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">Your Groups</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Your Groups</h1>
           <button
             onClick={() => navigate('/groups/new')}
             className="w-9 h-9 rounded-full bg-primary-600 text-white flex items-center justify-center shadow-sm active:scale-90 transition-transform"
@@ -31,8 +31,8 @@ export default function GroupList() {
         {groups.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-4xl mb-3">👥</p>
-            <p className="text-gray-500 font-medium">No groups yet</p>
-            <p className="text-sm text-gray-400 mt-1">Create your first group to get started</p>
+            <p className="text-gray-600 dark:text-gray-300 font-medium">No groups yet</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">Create your first group to get started</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -42,8 +42,8 @@ export default function GroupList() {
                   {categoryIcons[group.category] || '📋'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 text-sm truncate">{group.name}</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">{group.memberCount} members · {formatCurrency(group.totalExpenses)} total</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm truncate">{group.name}</h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">{group.memberCount} members · {formatCurrency(group.totalExpenses)} total</p>
                 </div>
                 <Badge variant={group.balance > 0 ? 'success' : group.balance < 0 ? 'danger' : 'default'} size="sm">
                   {group.balance >= 0 ? '+' : ''}{formatCurrency(group.balance)}

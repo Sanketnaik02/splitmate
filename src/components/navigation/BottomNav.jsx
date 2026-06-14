@@ -33,7 +33,7 @@ export default function BottomNav() {
   const { pathname } = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-50 border-t border-gray-100 dark:border-gray-800 pb-safe z-40">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 pb-safe z-40">
       <div className="max-w-lg mx-auto flex items-center justify-around h-16">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname.startsWith(item.path);
@@ -42,7 +42,7 @@ export default function BottomNav() {
               key={item.id}
               href={item.path}
               className={`flex flex-col items-center justify-center gap-0.5 min-w-[64px] py-1 ${
-                isActive ? 'text-primary-600' : 'text-gray-400'
+                isActive ? 'text-primary-600' : 'text-gray-500 dark:text-gray-300'
               }`}
             >
               <span className={isActive ? 'scale-110 transition-transform' : ''}>
