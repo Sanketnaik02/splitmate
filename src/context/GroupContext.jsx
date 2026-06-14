@@ -13,37 +13,42 @@ export function GroupProvider({ children }) {
   const [settlements, setSettlements] = useState([]);
 
   const loadGroups = useCallback(() => {
-    if (!user) { setGroups([]); return; }
-    const memberEntries = store.where('members', 'userId', user.id);
-    const groupIds = [...new Set(memberEntries.map((m) => m.groupId))];
-    const all = store.getAll('groups');
-    const myGroups = all.filter((g) => groupIds.includes(g.id)).map((g) => {
-      const gMembers = store.where('members', 'groupId', g.id);
-      const gExpenses = store.where('expenses', 'groupId', g.id);
-      const gSettlements = store.where('settlements', 'groupId', g.id);
-      const balances = {};
-      gMembers.forEach((m) => { balances[m.userId] = 0; });
-      gExpenses.forEach((e) => {
-        if (balances[e.paidBy] !== undefined) balances[e.paidBy] += e.amount;
-        if (e.splitDetails) {
-          Object.entries(e.splitDetails).forEach(([uid, share]) => {
-            if (balances[uid] !== undefined) balances[uid] -= share;
-          });
-        }
+    try {
+      if (!user) { setGroups([]); return; }
+      const memberEntries = store.where('members', 'userId', user.id);
+      const groupIds = [...new Set(memberEntries.map((m) => m.groupId))];
+      const all = store.getAll('groups');
+      const myGroups = all.filter((g) => groupIds.includes(g.id)).map((g) => {
+        const gMembers = store.where('members', 'groupId', g.id);
+        const gExpenses = store.where('expenses', 'groupId', g.id);
+        const gSettlements = store.where('settlements', 'groupId', g.id);
+        const balances = {};
+        gMembers.forEach((m) => { balances[m.userId] = 0; });
+        gExpenses.forEach((e) => {
+          if (balances[e.paidBy] !== undefined) balances[e.paidBy] += e.amount;
+          if (e.splitDetails) {
+            Object.entries(e.splitDetails).forEach(([uid, share]) => {
+              if (balances[uid] !== undefined) balances[uid] -= share;
+            });
+          }
+        });
+        gSettlements.filter((s) => s.status === 'completed').forEach((s) => {
+          if (balances[s.fromUserId] !== undefined) balances[s.fromUserId] += s.amount;
+          if (balances[s.toUserId] !== undefined) balances[s.toUserId] -= s.amount;
+        });
+        return {
+          ...g,
+          members: gMembers,
+          memberCount: gMembers.length,
+          totalExpenses: gExpenses.reduce((sum, e) => sum + e.amount, 0),
+          balance: Math.round((balances[user.id] || 0) * 100) / 100,
+        };
       });
-      gSettlements.filter((s) => s.status === 'completed').forEach((s) => {
-        if (balances[s.fromUserId] !== undefined) balances[s.fromUserId] += s.amount;
-        if (balances[s.toUserId] !== undefined) balances[s.toUserId] -= s.amount;
-      });
-      return {
-        ...g,
-        members: gMembers,
-        memberCount: gMembers.length,
-        totalExpenses: gExpenses.reduce((sum, e) => sum + e.amount, 0),
-        balance: Math.round((balances[user.id] || 0) * 100) / 100,
-      };
-    });
-    setGroups(myGroups);
+      setGroups(myGroups);
+    } catch (err) {
+      console.error('[GroupContext] loadGroups error:', err);
+      setGroups([]);
+    }
   }, [user]);
 
   useEffect(() => { loadGroups(); }, [loadGroups]);

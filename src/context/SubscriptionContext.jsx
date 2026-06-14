@@ -16,12 +16,17 @@ export function SubscriptionProvider({ children }) {
   const [planId, setPlanId] = useState(() => getPlanId(user));
 
   const groupCount = (() => {
-    if (!user) return 0;
-    const all = store.getAll('groups');
-    return all.filter((g) => {
-      const members = store.where('members', 'groupId', g.id);
-      return members.some((m) => m.userId === user.id);
-    }).length;
+    try {
+      if (!user) return 0;
+      const all = store.getAll('groups');
+      return all.filter((g) => {
+        const members = store.where('members', 'groupId', g.id);
+        return members.some((m) => m.userId === user.id);
+      }).length;
+    } catch (err) {
+      console.error('[SubscriptionContext] groupCount error:', err);
+      return 0;
+    }
   })();
 
   const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId) || SUBSCRIPTION_PLANS[0];

@@ -38,6 +38,7 @@ function BalanceSkeleton() {
 }
 
 export default function Dashboard() {
+  console.log('[Dashboard] loaded');
   const navigate = useNavigate();
   const { user } = useAuth();
   const { groups } = useGroup();
@@ -48,63 +49,81 @@ export default function Dashboard() {
     return () => clearTimeout(timer);
   }, []);
 
+  console.log('[Dashboard] user:', user?.id, 'groups:', groups?.length);
+
   const { plan, groupCount, remaining } = useSubscription();
-  const allExpenses = store.getAll('expenses');
-  const allSettlements = store.getAll('settlements');
+  let allExpenses = [];
+  let allSettlements = [];
+  try {
+    allExpenses = store.getAll('expenses');
+    allSettlements = store.getAll('settlements');
+  } catch (err) {
+    console.error('[Dashboard] store.getAll error:', err);
+  }
 
   const balance = React.useMemo(() => {
-    if (!user) return { totalOwed: 0, totalOwes: 0, net: 0, totalExpenses: 0, totalPaid: 0 };
-    const enriched = groups.map((g) => ({
-      ...g,
-      members: store.where('members', 'groupId', g.id),
-    }));
-    return computeUserOverallBalance(user.id, enriched, allExpenses, allSettlements);
+    try {
+      if (!user) return { totalOwed: 0, totalOwes: 0, net: 0, totalExpenses: 0, totalPaid: 0 };
+      const enriched = groups.map((g) => ({
+        ...g,
+        members: store.where('members', 'groupId', g.id),
+      }));
+      return computeUserOverallBalance(user.id, enriched, allExpenses, allSettlements);
+    } catch (err) {
+      console.error('[Dashboard] balance compute error:', err);
+      return { totalOwed: 0, totalOwes: 0, net: 0, totalExpenses: 0, totalPaid: 0 };
+    }
   }, [user, groups, allExpenses, allSettlements]);
 
   const recentActivity = React.useMemo(() => {
-    if (!user) return [];
-    const gIds = groups.map((g) => g.id);
-    const items = [];
+    try {
+      if (!user) return [];
+      const gIds = groups.map((g) => g.id);
+      const items = [];
 
-    allExpenses
-      .filter((e) => gIds.includes(e.groupId))
-      .forEach((e) => {
-        const group = groups.find((g) => g.id === e.groupId);
-        const payer = store.get('users', e.paidBy);
-        const share = e.splitDetails?.[user.id] || 0;
-        items.push({
-          id: e.id,
-          description: e.description,
-          category: e.category,
-          amount: share,
-          paidBy: e.paidBy,
-          paidByName: payer?.displayName || e.paidBy,
-          groupName: group?.name || '',
-          userShare: share,
-          type: e.paidBy === user.id ? 'owed' : 'owe',
-          date: new Date(e.date || e.createdAt),
+      allExpenses
+        .filter((e) => gIds.includes(e.groupId))
+        .forEach((e) => {
+          const group = groups.find((g) => g.id === e.groupId);
+          const payer = store.get('users', e.paidBy);
+          const share = e.splitDetails?.[user.id] || 0;
+          items.push({
+            id: e.id,
+            description: e.description,
+            category: e.category,
+            amount: share,
+            paidBy: e.paidBy,
+            paidByName: payer?.displayName || e.paidBy,
+            groupName: group?.name || '',
+            userShare: share,
+            type: e.paidBy === user.id ? 'owed' : 'owe',
+            date: new Date(e.date || e.createdAt),
+          });
         });
-      });
 
-    allSettlements
-      .filter((s) => gIds.includes(s.groupId) && (s.fromUserId === user.id || s.toUserId === user.id))
-      .forEach((s) => {
-        const group = groups.find((g) => g.id === s.groupId);
-        const fromUser = store.get('users', s.fromUserId);
-        items.push({
-          id: s.id,
-          description: `Settled with ${fromUser?.displayName || s.fromUserId}`,
-          amount: s.amount,
-          paidBy: s.fromUserId,
-          paidByName: fromUser?.displayName || s.fromUserId,
-          groupName: group?.name || '',
-          type: 'settlement',
-          date: new Date(s.createdAt),
+      allSettlements
+        .filter((s) => gIds.includes(s.groupId) && (s.fromUserId === user.id || s.toUserId === user.id))
+        .forEach((s) => {
+          const group = groups.find((g) => g.id === s.groupId);
+          const fromUser = store.get('users', s.fromUserId);
+          items.push({
+            id: s.id,
+            description: `Settled with ${fromUser?.displayName || s.fromUserId}`,
+            amount: s.amount,
+            paidBy: s.fromUserId,
+            paidByName: fromUser?.displayName || s.fromUserId,
+            groupName: group?.name || '',
+            type: 'settlement',
+            date: new Date(s.createdAt),
+          });
         });
-      });
 
-    items.sort((a, b) => b.date - a.date);
-    return items.slice(0, 10);
+      items.sort((a, b) => b.date - a.date);
+      return items.slice(0, 10);
+    } catch (err) {
+      console.error('[Dashboard] recentActivity error:', err);
+      return [];
+    }
   }, [user, groups, allExpenses, allSettlements]);
 
   if (loading || !user) {

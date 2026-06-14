@@ -3,7 +3,9 @@ const PREFIX = 'splitmate_';
 function getAll(name) {
   try {
     const raw = localStorage.getItem(PREFIX + name);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data : [];
   } catch { return []; }
 }
 
