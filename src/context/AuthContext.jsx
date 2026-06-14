@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext();
+
+const AUTH_COOLDOWN_MS = 3000;
 
 async function fetchProfile(userId) {
   const { data } = await supabase
@@ -33,9 +35,44 @@ function mapSessionUser(sessionUser, profile) {
   };
 }
 
+function getCooldownError() {
+  const err = new Error('Please wait a moment before trying again.');
+  err.status = 429;
+  return err;
+}
+
+function getPendingError() {
+  const err = new Error('A request for this account is already in progress.');
+  err.status = 429;
+  return err;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const pendingRef = useRef({});
+  const lastCallRef = useRef({});
+
+  function checkCooldown(key) {
+    const now = Date.now();
+    const last = lastCallRef.current[key];
+    if (last && (now - last) < AUTH_COOLDOWN_MS) return true;
+    lastCallRef.current[key] = now;
+    return false;
+  }
+
+  function withDedup(key, fn) {
+    return async (...args) => {
+      if (pendingRef.current[key]) throw getPendingError();
+      if (checkCooldown(key)) throw getCooldownError();
+      pendingRef.current[key] = true;
+      try {
+        return await fn(...args);
+      } finally {
+        delete pendingRef.current[key];
+      }
+    };
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -69,45 +106,61 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const signUp = useCallback(async (name, email, password) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: name } },
-    });
-    if (error) throw error;
-
-    if (data?.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
+  const signUp = useCallback(withDedup('signUp', async (name, email, password) => {
+    const key = `signUp:${email.toLowerCase()}`;
+    if (pendingRef.current[key]) throw getPendingError();
+    if (checkCooldown(key)) throw getCooldownError();
+    pendingRef.current[key] = true;
+    try {
+      const { data, error } = await supabase.auth.signUp({
         email,
-        display_name: name,
-        photo_url: null,
-        phone: '',
-        default_currency: 'INR',
+        password,
+        options: { data: { display_name: name } },
       });
-      if (profileError && profileError.code !== '23505') throw profileError;
+      if (error) throw error;
+
+      if (data?.user) {
+        const { error: profileError } = await supabase.from('profiles').insert({
+          id: data.user.id,
+          email,
+          display_name: name,
+          photo_url: null,
+          phone: '',
+          default_currency: 'INR',
+        });
+        if (profileError && profileError.code !== '23505') throw profileError;
+      }
+
+      return data.user;
+    } finally {
+      delete pendingRef.current[key];
     }
+  }), []);
 
-    return data.user;
-  }, []);
+  const signIn = useCallback(withDedup('signIn', async (email, password) => {
+    const key = `signIn:${email.toLowerCase()}`;
+    if (pendingRef.current[key]) throw getPendingError();
+    if (checkCooldown(key)) throw getCooldownError();
+    pendingRef.current[key] = true;
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      return data.user;
+    } finally {
+      delete pendingRef.current[key];
+    }
+  }), []);
 
-  const signIn = useCallback(async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return data.user;
-  }, []);
-
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(withDedup('google', async () => {
     const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
     if (error) throw error;
-  }, []);
+  }), []);
 
-  const signOut = useCallback(async () => {
+  const signOut = useCallback(withDedup('signOut', async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     setUser(null);
-  }, []);
+  }), []);
 
   const updateProfile = useCallback(async (updates) => {
     if (!user) return;
