@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '../../layouts/AppLayout';
 import Input from '../../components/ui/Input';
@@ -22,6 +22,14 @@ export default function CreateGroup() {
   const [category, setCategory] = useState('other');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (atLimit) {
+      setError(`You have reached your ${plan.name} plan limit of ${plan.maxGroups} groups. Please upgrade your subscription.`);
+    } else {
+      setError('');
+    }
+  }, [atLimit, plan.name, plan.maxGroups]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

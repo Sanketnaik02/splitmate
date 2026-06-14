@@ -6,7 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 const menuItems = [
   { id: 'edit', label: 'Edit Profile', icon: '✏️', color: 'bg-blue-50' },
-  { id: 'help', label: 'Help & Support', icon: '❓', color: 'bg-gray-50' },
+  { id: 'help', label: 'App Guide', icon: '📖', color: 'bg-primary-50' },
   { id: 'privacy', label: 'Privacy Policy', icon: '⚖️', color: 'bg-gray-50' },
 ];
 
@@ -17,7 +17,7 @@ export default function Profile() {
 
   const handleMenu = (id) => {
     if (id === 'edit') navigate('/profile/edit');
-    if (id === 'help') alert('SplitMate — Split expenses, not friendships.\n\nBuilt with React + Vite + Tailwind CSS.\nLocal storage powered.');
+    if (id === 'help') navigate('/guide');
     if (id === 'privacy') alert('Your data is stored locally on this device. No data is sent to any server.');
   };
 
@@ -51,7 +51,7 @@ export default function Profile() {
           className="w-full mt-4 py-3 bg-white dark:bg-gray-50 rounded-xl shadow-sm flex items-center justify-center gap-2 text-gray-700 dark:text-gray-200 font-medium active:scale-[0.99] transition-transform"
         >
           <span className="text-lg">{theme === 'dark' ? '☀️' : '🌙'}</span>
-          {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          <span>Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode</span>
         </button>
 
         <button

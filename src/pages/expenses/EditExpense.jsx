@@ -5,22 +5,33 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import AmountInput from '../../components/form/AmountInput';
 import CategoryPicker from '../../components/form/CategoryPicker';
+import SplitTypeSelector from '../../components/form/SplitTypeSelector';
+import MemberPicker from '../../components/form/MemberPicker';
 import { useGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { store } from '../../utils/storage';
+import { calcEqualSplit, calcSharesSplit } from '../../utils/calculators';
 
 export default function EditExpense() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { updateExpense } = useGroup();
+  const { groups, setActiveGroup, updateExpense, members: ctxMembers } = useGroup();
   const { showToast } = useToast();
 
   const original = store.get('expenses', id);
+  const group = groups.find((g) => g.id === original?.groupId);
+  const groupMembers = group ? (group.members || []) : original ? store.where('members', 'groupId', original.groupId) : [];
+
   const [description, setDescription] = useState(original?.description || '');
   const [amount, setAmount] = useState(original ? String(original.amount) : '');
   const [category, setCategory] = useState(original?.category || 'food');
+  const [paidBy, setPaidBy] = useState(original?.paidBy || user?.id || '');
+  const [splitType, setSplitType] = useState(original?.splitType || 'equal');
+  const [splitAmong, setSplitAmong] = useState(
+    original?.splitDetails ? Object.keys(original.splitDetails) : groupMembers.map((m) => m.userId)
+  );
 
   if (!original) {
     return (
@@ -37,19 +48,35 @@ export default function EditExpense() {
       showToast('Please fill in all fields', 'error');
       return;
     }
+    if (splitAmong.length === 0) {
+      showToast('Select at least one person to split with', 'error');
+      return;
+    }
 
-    const oldAmt = original.amount;
-    const ratio = amt / oldAmt;
-    const newSplit = {};
-    Object.entries(original.splitDetails || {}).forEach(([uid, share]) => {
-      newSplit[uid] = Math.round(share * ratio * 100) / 100;
-    });
+    let splitDetails;
+    if (splitType === 'equal') {
+      splitDetails = calcEqualSplit(amt, splitAmong);
+    } else if (splitType === 'shares') {
+      const shares = {};
+      splitAmong.forEach((uid) => { shares[uid] = 1; });
+      splitDetails = calcSharesSplit(amt, shares);
+    } else {
+      const ratio = amt / original.amount;
+      splitDetails = {};
+      (original.splitDetails ? Object.keys(original.splitDetails) : splitAmong).forEach((uid) => {
+        if (splitAmong.includes(uid)) {
+          splitDetails[uid] = Math.round((original.splitDetails?.[uid] || amt / splitAmong.length) * ratio * 100) / 100;
+        }
+      });
+    }
 
     updateExpense(id, {
       description: description.trim(),
       amount: amt,
       category,
-      splitDetails: newSplit,
+      paidBy,
+      splitType,
+      splitDetails,
     });
 
     showToast('Expense updated!', 'success');
@@ -72,6 +99,23 @@ export default function EditExpense() {
           <AmountInput label="Amount" value={amount} onChange={setAmount} />
           <Input label="Description" value={description} onChange={(e) => setDescription(e.target.value)} icon="📝" />
           <CategoryPicker value={category} onChange={setCategory} />
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">Paid by</label>
+            <select
+              value={paidBy}
+              onChange={(e) => setPaidBy(e.target.value)}
+              className="w-full px-4 py-2.5 text-sm bg-white dark:bg-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:border-primary-500"
+            >
+              {groupMembers.map((m) => (
+                <option key={m.userId} value={m.userId}>{m.userId === user?.id ? `You (${user.displayName})` : m.displayName}</option>
+              ))}
+            </select>
+          </div>
+
+          <SplitTypeSelector value={splitType} onChange={setSplitType} />
+          <MemberPicker label="Split among" members={groupMembers} selectedIds={splitAmong} onChange={setSplitAmong} />
+
           <div className="pt-4 space-y-3">
             <Button type="submit" fullWidth>Save Changes</Button>
             <Button type="button" variant="secondary" fullWidth onClick={() => navigate(-1)}>Cancel</Button>

@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import MemberList from '../../components/group/MemberList';
 import ExpenseRow from '../../components/expense/ExpenseRow';
 import GroupBalanceSummary from '../../components/group/GroupBalanceSummary';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useExpenseCalc from '../../hooks/useExpenseCalc';
 import { useGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
@@ -23,6 +24,7 @@ export default function GroupDetail() {
   const [tab, setTab] = useState('expenses');
   const [inviteName, setInviteName] = useState('');
   const [showInvite, setShowInvite] = useState(false);
+  const [removingMember, setRemovingMember] = useState(null);
 
   React.useEffect(() => {
     setActiveGroup(groupId);
@@ -55,8 +57,26 @@ export default function GroupDetail() {
       showToast('You cannot remove yourself', 'error');
       return;
     }
-    removeMember(groupId, userId);
-    showToast('Member removed', 'success');
+    const member = members.find((m) => m.userId === userId);
+    if (!member) return;
+    const memberExpenses = expenses.filter((e) => {
+      if (e.paidBy === userId) return true;
+      if (e.splitDetails && userId in e.splitDetails) return true;
+      return false;
+    });
+    if (memberExpenses.length > 0) {
+      setRemovingMember({ userId, displayName: member.displayName, expenseCount: memberExpenses.length });
+    } else {
+      removeMember(groupId, userId);
+      showToast(`${member.displayName} removed from group`, 'success');
+    }
+  };
+
+  const confirmRemoveMember = () => {
+    if (!removingMember) return;
+    removeMember(groupId, removingMember.userId);
+    showToast(`${removingMember.displayName} removed from group`, 'success');
+    setRemovingMember(null);
   };
 
   const handleDeleteExpense = (expenseId) => {
@@ -92,7 +112,10 @@ export default function GroupDetail() {
         <Card padding="p-0" className="mb-4 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Members</p>
-            <button onClick={() => setShowInvite(!showInvite)} className="text-xs font-medium text-primary-600">+ Invite</button>
+            <button onClick={() => setShowInvite(!showInvite)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 active:bg-primary-800 active:scale-95 transition-all shadow-sm">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Member
+            </button>
           </div>
           <MemberList members={members} onRemoveMember={isAdmin ? handleRemoveMember : undefined} />
           {showInvite && (
@@ -101,7 +124,7 @@ export default function GroupDetail() {
                 value={inviteName}
                 onChange={(e) => setInviteName(e.target.value)}
                 placeholder="Enter member name"
-                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-primary-500"
+                className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-100 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:border-primary-500"
                 onKeyDown={(e) => e.key === 'Enter' && handleAddMember()}
               />
               <Button size="sm" onClick={handleAddMember}>Add</Button>
@@ -189,6 +212,19 @@ export default function GroupDetail() {
           </Card>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={!!removingMember}
+        onClose={() => setRemovingMember(null)}
+        title={`Remove ${removingMember?.displayName || ''}?`}
+        message={removingMember?.expenseCount > 0
+          ? `${removingMember.displayName} is involved in ${removingMember.expenseCount} expense(s). Removing them will not delete these expenses but they will no longer be part of the group.`
+          : `Remove ${removingMember?.displayName} from this group?`
+        }
+        confirmLabel="Remove"
+        onConfirm={confirmRemoveMember}
+        variant="danger"
+      />
     </AppLayout>
   );
 }
