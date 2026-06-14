@@ -40,6 +40,7 @@ export const SUBSCRIPTION_PLANS = [
   {
     id: 'free',
     name: 'Free',
+    icon: '🎁',
     price: 0,
     maxGroups: 5,
     features: [
@@ -55,6 +56,7 @@ export const SUBSCRIPTION_PLANS = [
   {
     id: 'starter',
     name: 'Starter',
+    icon: '🚀',
     price: 20,
     maxGroups: 10,
     features: [
@@ -68,6 +70,7 @@ export const SUBSCRIPTION_PLANS = [
   {
     id: 'pro',
     name: 'Pro',
+    icon: '👑',
     price: 100,
     maxGroups: 30,
     features: [
@@ -81,6 +84,7 @@ export const SUBSCRIPTION_PLANS = [
   {
     id: 'business',
     name: 'Business',
+    icon: '💼',
     price: 150,
     maxGroups: 50,
     features: [

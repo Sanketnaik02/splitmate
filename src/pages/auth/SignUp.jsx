@@ -26,10 +26,10 @@ export default function SignUp() {
       await signUp(name, email, password);
       navigate('/dashboard');
     } catch (err) {
-      if (err?.message === 'DUPLICATE_EMAIL') {
+      if (err?.message?.toLowerCase().includes('already registered')) {
         setError('This email is already registered. Please login instead.');
       } else {
-        setError('Something went wrong. Try again.');
+        setError(err?.message || 'Something went wrong. Try again.');
       }
     }
   };

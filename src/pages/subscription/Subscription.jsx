@@ -56,9 +56,12 @@ export default function Subscription() {
                 )}
 
                 <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">{plan.maxGroups} groups max</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{plan.icon}</span>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">{plan.maxGroups} groups max</p>
+                    </div>
                   </div>
                   <div className="text-right">
                     {plan.price === 0 ? (
@@ -92,6 +95,20 @@ export default function Subscription() {
             );
           })}
         </div>
+
+        <Card padding="p-5" className="bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-2xl">💎</span>
+            <h3 className="text-base font-bold text-gray-900">Need more groups?</h3>
+          </div>
+          <p className="text-sm text-gray-600 leading-relaxed mb-3">
+            Upgrade your plan and continue managing unlimited trips, events and expenses.
+          </p>
+          <p className="text-xs text-gray-500 mb-4">Plans starting from only ₹20.</p>
+          <Button fullWidth size="sm" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            Upgrade Now
+          </Button>
+        </Card>
       </div>
     </AppLayout>
   );

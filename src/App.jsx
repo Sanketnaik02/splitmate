@@ -9,6 +9,7 @@ import ProtectedRoute from './components/navigation/ProtectedRoute';
 import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
 import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import Dashboard from './pages/dashboard/Dashboard';
 import GroupList from './pages/groups/GroupList';
 import CreateGroup from './pages/groups/CreateGroup';
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />

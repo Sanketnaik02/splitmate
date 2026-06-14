@@ -1,15 +1,36 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { store } from '../utils/storage';
+import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext();
 
-function getCurrentUserId() {
-  try { return localStorage.getItem('splitmate_session'); } catch { return null; }
+async function fetchProfile(userId) {
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  if (data) {
+    return {
+      id: data.id,
+      email: data.email,
+      displayName: data.display_name,
+      photoURL: data.photo_url,
+      phone: data.phone || '',
+      defaultCurrency: data.default_currency || 'INR',
+    };
+  }
+  return null;
 }
 
-function setCurrentUserId(id) {
-  if (id) localStorage.setItem('splitmate_session', id);
-  else localStorage.removeItem('splitmate_session');
+function mapSessionUser(sessionUser, profile) {
+  return profile || {
+    id: sessionUser.id,
+    email: sessionUser.email,
+    displayName: sessionUser.user_metadata?.display_name || sessionUser.email?.split('@')[0] || 'User',
+    photoURL: sessionUser.user_metadata?.avatar_url || null,
+    phone: '',
+    defaultCurrency: 'INR',
+  };
 }
 
 export function AuthProvider({ children }) {
@@ -17,73 +38,89 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const id = getCurrentUserId();
-    if (id) {
-      const found = store.get('users', id);
-      if (found) setUser(found);
-    }
-    setLoading(false);
+    let cancelled = false;
+
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!cancelled) {
+        if (session?.user) {
+          const profile = await fetchProfile(session.user.id);
+          if (!cancelled) setUser(mapSessionUser(session.user, profile));
+        }
+        setLoading(false);
+      }
+    };
+
+    init();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
+        const profile = await fetchProfile(session.user.id);
+        if (!cancelled) setUser(mapSessionUser(session.user, profile));
+      } else if (event === 'SIGNED_OUT') {
+        if (!cancelled) setUser(null);
+      }
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const signUp = useCallback(async (name, email, password) => {
-    const existing = store.where('users', 'email', email);
-    if (existing.length > 0) throw new Error('DUPLICATE_EMAIL');
-
-    const newUser = store.add('users', {
-      displayName: name,
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      photoURL: null,
-      phone: '',
-      defaultCurrency: 'INR',
+      options: { data: { display_name: name } },
     });
+    if (error) throw error;
 
-    setCurrentUserId(newUser.id);
-    setUser(newUser);
-    return newUser;
+    if (data?.user) {
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: data.user.id,
+        email,
+        display_name: name,
+        photo_url: null,
+        phone: '',
+        default_currency: 'INR',
+      });
+      if (profileError && profileError.code !== '23505') throw profileError;
+    }
+
+    return data.user;
   }, []);
 
   const signIn = useCallback(async (email, password) => {
-    const matched = store.where('users', 'email', email);
-    if (matched.length === 0) throw new Error('No account found with this email');
-    if (matched[0].password !== password) throw new Error('Incorrect password');
-
-    setCurrentUserId(matched[0].id);
-    setUser(matched[0]);
-    return matched[0];
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data.user;
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    const existing = store.where('users', 'email', 'demo@splitmate.app');
-    if (existing.length > 0) {
-      setCurrentUserId(existing[0].id);
-      setUser(existing[0]);
-      return existing[0];
-    }
-
-    const newUser = store.add('users', {
-      displayName: 'Demo User',
-      email: 'demo@splitmate.app',
-      password: '',
-      photoURL: null,
-      phone: '',
-      defaultCurrency: 'INR',
-    });
-
-    setCurrentUserId(newUser.id);
-    setUser(newUser);
-    return newUser;
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+    if (error) throw error;
   }, []);
 
   const signOut = useCallback(async () => {
-    setCurrentUserId(null);
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
     setUser(null);
   }, []);
 
-  const updateProfile = useCallback((updates) => {
+  const updateProfile = useCallback(async (updates) => {
     if (!user) return;
-    const updated = store.update('users', user.id, updates);
-    if (updated) setUser(updated);
+    const { error } = await supabase.from('profiles').upsert({
+      id: user.id,
+      email: user.email,
+      display_name: updates.displayName ?? user.displayName,
+      phone: updates.phone ?? user.phone,
+      photo_url: updates.photoURL ?? user.photoURL,
+      default_currency: updates.defaultCurrency ?? user.defaultCurrency,
+    });
+    if (error) throw error;
+    setUser(prev => ({ ...prev, ...updates }));
   }, [user]);
 
   return (

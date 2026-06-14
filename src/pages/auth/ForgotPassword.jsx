@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AuthLayout from '../../layouts/AuthLayout';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
+import { supabase } from '../../lib/supabase';
 import { validateEmail } from '../../utils/validators';
 import { useToast } from '../../components/ui/Toast';
 
@@ -9,10 +10,17 @@ export default function ForgotPassword() {
   const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateEmail(email)) { showToast('Please enter a valid email', 'error'); return; }
+    setSubmitting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setSubmitting(false);
+    if (error) { showToast(error.message, 'error'); return; }
     setSent(true);
     showToast('Reset link sent to your email', 'success');
   };
@@ -34,7 +42,7 @@ export default function ForgotPassword() {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="alex@email.com" icon="✉️" />
-          <Button type="submit" fullWidth>Send Reset Link</Button>
+          <Button type="submit" fullWidth loading={submitting}>Send Reset Link</Button>
         </form>
       )}
     </AuthLayout>
