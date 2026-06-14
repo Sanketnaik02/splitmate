@@ -1,0 +1,985 @@
+================================================================================
+                        SPLITMATE - PROJECT DOCUMENTATION
+================================================================================
+
+==============================================================================
+1. PROJECT OVERVIEW
+==============================================================================
+
+Application Name : SplitMate
+Version          : 1.0.0
+Developed By     : Mr. Sanket Naik
+Role             : Founder & Developer
+
+Description:
+SplitMate is a modern, mobile-first expense sharing and bill splitting
+web application. It enables groups of people  friends, roommates, couples,
+or colleagues  to track shared expenses, split bills equitably, and settle
+debts without the usual friction of manual calculations.
+
+Main Purpose:
+To eliminate the awkwardness and complexity of splitting group expenses
+by providing a simple, intuitive platform where every member can see who
+paid, who owes what, and how to settle up  all in real-time.
+
+Target Users:
+- Friend groups on trips or outings
+- Roommates managing shared household expenses
+- Couples tracking shared finances
+- Colleagues splitting team meals or gifts
+- Event organizers managing group contributions
+
+Business Use Case:
+SplitMate reduces financial friction in group settings. Instead of tracking
+expenses in notes or spreadsheets, users create groups, add members, log
+expenses, and the app automatically calculates balances, simplifies debts,
+and suggests the minimum number of settlements required to zero out everyone.
+
+
+==============================================================================
+2. TECHNOLOGY STACK
+==============================================================================
+
+Frontend:
+  Framework  : React 18.2.0 (with JSX)
+  Bundler    : Vite 8.0.16
+  Language   : JavaScript (ES Modules)
+  Routing    : React Router DOM 6.20.0
+  Styling    : Tailwind CSS 3.4.0
+  Dark Mode  : Tailwind 'class' strategy + CSS custom properties
+
+Backend / Auth:
+  Provider          : Supabase
+  Auth Service      : Supabase Auth (email/password, Google OAuth)
+  Database          : Supabase PostgreSQL (profiles table)
+  Client Library    : @supabase/supabase-js 2.108.1
+
+Data Storage:
+  Primary          : Browser localStorage (for groups, expenses, members,
+                     settlements, subscriptions)
+  Server           : Supabase PostgreSQL (for user profiles only)
+
+State Management:
+  Approach         : React Context API + Custom Hooks
+  Providers        : AuthContext, GroupContext, ThemeContext,
+                     SubscriptionContext
+
+Deployment:
+  Platform         : Vercel
+  Framework Preset : Vite
+  Build Command    : npm run build
+  Output Directory : dist
+  Rewrites         : All routes → /index.html (SPA support)
+
+Environment Variables:
+  VITE_SUPABASE_URL     : Supabase project URL
+  VITE_SUPABASE_ANON_KEY: Supabase anonymous/public key
+
+Dev Dependencies:
+  @vitejs/plugin-react  : Vite React plugin
+  autoprefixer          : PostCSS vendor prefixing
+  postcss               : CSS transformation
+  tailwindcss           : Utility CSS framework
+  vite                  : Dev server + build tool
+
+
+==============================================================================
+3. FOLDER STRUCTURE
+==============================================================================
+
+splitmate/
+|
++-- index.html                  # Vite entry HTML
++-- vite.config.js              # Vite build configuration
++-- tailwind.config.js          # Tailwind CSS configuration (CSS vars)
++-- postcss.config.js           # PostCSS configuration
++-- vercel.json                 # Vercel deployment configuration
++-- package.json                # Dependencies & scripts
++-- .env                        # Environment variables (VITE_SUPABASE_*)
++-- .gitignore                  # Git ignore rules
++-- README.md                   # Project readme
+|
++-- dist/                       # Production build output
+|
++-- supabase/
+|   +-- migrations/
+|       +-- 001_create_profiles.sql   # Profiles table + RLS + trigger
+|
++-- src/                        # Application source code
+    |
+    +-- main.jsx                # React entry point (BrowserRouter)
+    +-- App.jsx                 # Root component (routes, providers)
+    +-- index.css               # Global styles, CSS vars, dark overrides
+    |
+    +-- lib/                    # External service clients
+    |   +-- supabase.js         # Supabase client initialization
+    |
+    +-- config/                 # Application configuration
+    |   +-- constants.js        # Plans, categories, nav items, constants
+    |
+    +-- context/                # React Context providers
+    |   +-- AuthContext.jsx     # Auth state, login/signup/logout
+    |   +-- GroupContext.jsx    # Groups CRUD, members, expenses
+    |   +-- ThemeContext.jsx    # Dark/Light theme toggle
+    |   +-- SubscriptionContext.jsx  # Plan limits & upgrades
+    |
+    +-- hooks/                  # Custom React hooks
+    |   +-- useExpenseCalc.js   # Balance & settlement calculations
+    |
+    +-- utils/                  # Utility functions
+    |   +-- storage.js          # localStorage CRUD wrapper (store object)
+    |   +-- calculators.js      # Split/balance/settlement math
+    |   +-- validators.js       # Form validation functions
+    |   +-- currency.js         # Indian Rupee formatting
+    |   +-- authErrors.js       # Auth error message mapping
+    |
+    +-- layouts/                # Page layout wrappers
+    |   +-- AppLayout.jsx       # Main app layout (TopNav + content + BottomNav)
+    |   +-- AuthLayout.jsx      # Auth pages layout (centered card)
+    |
+    +-- components/             # Reusable UI components
+    |   +-- ui/
+    |   |   +-- Card.jsx        # Shared card container
+    |   |   +-- Button.jsx      # Button with variants (primary/secondary/ghost/danger)
+    |   |   +-- Input.jsx       # Text input with icon & error support
+    |   |   +-- Modal.jsx       # Modal dialog with header/footer
+    |   |   +-- Badge.jsx       # Status badge (default/success/warning/danger/primary)
+    |   |   +-- Toast.jsx       # Toast notification system (context-based)
+    |   |   +-- EmptyState.jsx  # Empty state placeholder
+    |   |   +-- Avatar.jsx      # User avatar (image or initials)
+    |   |   +-- LoadingSpinner.jsx  # Full-page loading overlay
+    |   |   +-- BottomSheet.jsx # Slide-up action sheet
+    |   |   +-- ConfirmDialog.jsx   # Confirmation dialog (danger/info)
+    |   |   +-- Select.jsx      # Dropdown select with label
+    |   |
+    |   +-- form/
+    |   |   +-- AmountInput.jsx        # Currency amount input with ₹ prefix
+    |   |   +-- SplitTypeSelector.jsx  # Equal/Percentage/Exact/Shares selector
+    |   |   +-- MemberPicker.jsx       # Multi-select member list
+    |   |   +-- CategoryPicker.jsx     # Expense category grid
+    |   |
+    |   +-- navigation/
+    |   |   +-- TopNav.jsx       # Top navigation bar
+    |   |   +-- BottomNav.jsx    # Bottom tab navigation (4 tabs)
+    |   |   +-- ProtectedRoute.jsx  # Auth guard wrapper
+    |   |
+    |   +-- dashboard/
+    |   |   +-- BalanceSummary.jsx    # Overall balance card
+    |   |   +-- RecentExpenses.jsx    # Recent activity list
+    |   |   +-- QuickActions.jsx      # FAB + action sheet
+    |   |
+    |   +-- group/
+    |   |   +-- GroupCard.jsx         # Horizontal group card
+    |   |   +-- MemberList.jsx        # Group members list
+    |   |   +-- GroupBalanceSummary.jsx  # Balance-per-member view
+    |   |
+    |   +-- expense/
+    |       +-- ExpenseRow.jsx        # Single expense row
+    |
+    +-- pages/                  # Route-level page components
+        +-- auth/
+        |   +-- SignIn.jsx            # /signin
+        |   +-- SignUp.jsx            # /signup
+        |   +-- ForgotPassword.jsx    # /forgot-password
+        |   +-- ResetPassword.jsx     # /reset-password
+        |
+        +-- dashboard/
+        |   +-- Dashboard.jsx         # /dashboard
+        |
+        +-- groups/
+        |   +-- GroupList.jsx         # /groups
+        |   +-- CreateGroup.jsx       # /groups/new
+        |   +-- GroupDetail.jsx       # /groups/:groupId
+        |
+        +-- expenses/
+        |   +-- AddExpense.jsx        # /expenses/new
+        |   +-- ExpenseDetail.jsx     # /expenses/:id
+        |   +-- EditExpense.jsx       # /expenses/:id/edit
+        |
+        +-- settlements/
+        |   +-- SettleUp.jsx          # /groups/:groupId/settle
+        |   +-- SettlementHistory.jsx # /groups/:groupId/settlements
+        |
+        +-- subscription/
+        |   +-- Subscription.jsx      # /subscription
+        |
+        +-- profile/
+        |   +-- Profile.jsx           # /profile
+        |   +-- EditProfile.jsx       # /profile/edit
+        |
+        +-- guide/
+        |   +-- ApplicationGuide.jsx  # /guide
+        |
+        +-- NotFound.jsx              # 404 catch-all
+
+
+==============================================================================
+4. DATABASE STRUCTURE
+==============================================================================
+
+SplitMate uses a hybrid storage model:
+  - User profiles are stored in Supabase PostgreSQL (server-side)
+  - All application data (groups, expenses, members, settlements) is stored
+    in browser localStorage using a structured CRUD wrapper
+
+----------------------------------------------------------------------
+4.1 Supabase Tables
+----------------------------------------------------------------------
+
+Table: profiles
+
+  Column            | Type          | Description
+  ------------------+---------------+-------------------------------------------
+  id                | UUID (PK)     | References auth.users(id) ON DELETE CASCADE
+  email             | TEXT NOT NULL  | User's email address
+  display_name      | TEXT          | User's display name
+  photo_url         | TEXT          | Avatar/profile photo URL
+  phone             | TEXT          | Phone number (default: '')
+  default_currency  | TEXT          | Preferred currency (default: 'INR')
+  created_at        | TIMESTAMPTZ   | Account creation timestamp
+
+  RLS Policies:
+    - SELECT: auth.uid() = id (users can read only their own profile)
+    - INSERT: auth.uid() = id (users can create their own profile)
+    - UPDATE: auth.uid() = id (users can update their own profile)
+
+  Trigger: handle_new_user()
+    - Fires AFTER INSERT ON auth.users
+    - Auto-creates a profile row with id, email, and display_name
+    - Prevents duplicate profiles with ON CONFLICT (id) DO NOTHING
+
+----------------------------------------------------------------------
+4.2 localStorage Collections
+----------------------------------------------------------------------
+
+All collections use the prefix "splitmate_" (e.g., "splitmate_groups").
+
+Collection: groups
+
+  Field       | Type     | Description
+  ------------+----------+-----------------------------------------------
+  id          | string   | Auto-generated unique ID
+  name        | string   | Group name
+  category    | string   | Group category (trip/roommates/couple/food/other)
+  description | string   | Optional group description
+  createdBy   | string   | User ID who created the group
+  currency    | string   | Group currency (default: 'INR')
+  inviteCode  | string   | Auto-generated invite code
+  createdAt   | string   | ISO timestamp
+
+Collection: members
+
+  Field       | Type     | Description
+  ------------+----------+-----------------------------------------------
+  id          | string   | Auto-generated unique ID
+  groupId     | string   | Reference to groups.id
+  userId      | string   | User's auth ID
+  displayName | string   | Member's display name
+  role        | string   | 'admin' or 'member'
+  createdAt   | string   | ISO timestamp
+
+Collection: expenses
+
+  Field        | Type     | Description
+  -------------+----------+-----------------------------------------------
+  id           | string   | Auto-generated unique ID
+  groupId      | string   | Reference to groups.id
+  description  | string   | Expense description
+  amount       | number   | Total expense amount
+  category     | string   | Expense category ID
+  paidBy       | string   | User ID of payer
+  splitType    | string   | Split method (equal/percentage/exact/shares)
+  splitDetails | object   | { userId: shareAmount }
+  splitAmong   | string[] | Array of user IDs included in split
+  date         | string   | Expense date
+  createdAt    | string   | ISO timestamp
+
+Collection: settlements
+
+  Field       | Type     | Description
+  ------------+----------+-----------------------------------------------
+  id          | string   | Auto-generated unique ID
+  groupId     | string   | Reference to groups.id
+  fromUserId  | string   | User who pays
+  toUserId    | string   | User who receives
+  amount      | number   | Settlement amount
+  note        | string   | Optional note
+  status      | string   | 'pending' or 'completed'
+  createdAt   | string   | ISO timestamp
+
+Collection: subscriptions
+
+  Field        | Type     | Description
+  -------------+----------+-----------------------------------------------
+  id           | string   | Auto-generated unique ID
+  userId       | string   | User's auth ID
+  planId       | string   | Plan identifier (free/starter/pro/business)
+  activatedAt  | string   | ISO timestamp
+  updatedAt    | string   | ISO timestamp
+
+Collection: users (guest/local users)
+
+  Field            | Type     | Description
+  -----------------+----------+-----------------------------------------------
+  id               | string   | Auto-generated unique ID
+  displayName      | string   | User's name
+  email            | string   | Email (empty for guest members)
+  password         | string   | Empty for guest members
+  photoURL         | string   | Avatar URL
+  phone            | string   | Phone number
+  defaultCurrency  | string   | Default currency
+
+
+==============================================================================
+5. AUTHENTICATION FLOW
+==============================================================================
+
+5.1 Email Signup (/signup)
+
+  Step 1: User enters name, email, and password (client-side validation:
+          email format check, password minimum 6 characters).
+  Step 2: signUp() calls supabase.auth.signUp() with display_name metadata.
+  Step 3: If signUp returns a session (auto-confirmed/disable email confirm):
+          - Profile insert attempted in profiles table
+          - resolveUser() fetches or creates the profile
+          - setUser() sets the authenticated user in context
+          - Returns user object (truthy) → navigates to /dashboard
+  Step 4: If no session returned (email confirmation required):
+          - Returns null → shows "Check your email" confirmation screen
+  Step 5: Duplicate email → throws "already registered" error →
+          getAuthErrorMessage() returns:
+          "An account with this email already exists. Please sign in."
+
+5.2 Email Login (/signin)
+
+  Step 1: User enters email and password.
+  Step 2: signIn() calls supabase.auth.signInWithPassword().
+  Step 3: On success:
+          - resolveUser() fetches profile from profiles table
+          - setUser() called EXPLICITLY (ensures user is set before
+            the function returns, avoiding race conditions with the
+            async onAuthStateChange handler)
+          - Returns user object → navigate('/dashboard')
+  Step 4: Wrong credentials → returns "Invalid email or password."
+
+5.3 Authentication State Persistence (App init)
+
+  Step 1: loading=true, App shows splash/loading state
+  Step 2: init() calls supabase.auth.getSession()
+  Step 3: If session exists with user:
+          - resolveUser() fetches profile
+          - setUser() stores user in context
+          - safeFinish() sets loading=false
+  Step 4: If no session:
+          - Does NOT set loading=false immediately
+          - Waits for onAuthStateChange to fire
+  Step 5: onAuthStateChange handles events:
+          - SIGNED_IN / INITIAL_SESSION / TOKEN_REFRESHED:
+            resolveUser + setUser + safeFinish()
+          - SIGNED_OUT: setUser(null) + safeFinish()
+          - INITIAL_SESSION without user: safeFinish()
+  Step 6: 10-second safety timeout: forces loading=false if
+          auth never resolves (prevents infinite loading)
+
+5.4 Logout
+
+  Step 1: signOut() calls supabase.auth.signOut()
+  Step 2: Sets user to null in context
+  Step 3: ProtectedRoute detects user=null → redirect to /signin
+
+5.5 Google Login
+
+  Sign-in with Google is implemented via signInWithOAuth({ provider: 'google' }),
+  which triggers Supabase's OAuth redirect flow. The redirect URL is set to
+  the current origin + /dashboard. Google login is available in the codebase
+  but its implementation is on hold pending full email auth production readiness.
+
+5.6 Password Reset
+
+  Forgot Password (/forgot-password):
+    - Calls supabase.auth.resetPasswordForEmail()
+    - Shows success message with email confirmation instructions
+    - Rate-limited with per-email dedup + 3-second cooldown
+
+  Reset Password (/reset-password):
+    - Captures new password from user
+    - Calls supabase.auth.updateUser() to set new password
+    - Cleans up onAuthStateChange listener on unmount
+
+5.7 Rate Limiting
+
+  AuthContext implements a custom rate-limiting system:
+  - withDedup(key, fn): Wraps any auth function to prevent concurrent calls
+  - pendingRef: Tracks in-flight requests per key
+  - lastCallRef: Tracks last call timestamp per key
+  - checkCooldown(): Rejects calls within 3 seconds of the last call
+  - Applies to: signUp, signIn, signInWithGoogle, signOut
+
+
+==============================================================================
+6. APPLICATION FEATURES
+==============================================================================
+
+COMPLETED FEATURES:
+
+  1  User Registration (email + password)
+  2  User Login (email + password)
+  3  Google OAuth Sign-in (implemented, pending production testing)
+  4  Password Reset (Forgot Password / Reset Password flow)
+  5  Session Persistence (survives page refresh)
+  6  Rate-Limited Auth Actions (3-second cooldown, dedup)
+  7  Create Group (with category selection)
+  8  Add Members to Group (by name)
+  9  Remove Members from Group (with expense-checked guard)
+ 10  Add Expenses (with description, amount, category)
+ 11  Edit Expenses (modify any field)
+ 12  Delete Expenses
+ 13  Equal Split (divide equally among selected members)
+ 14  Percentage Split (custom percentages per member)
+ 15  Exact Split (custom amounts per member)
+ 16  Shares Split (divide by share ratio)
+ 17  Group Balance Calculation (per-member net balance)
+ 18  Overall Dashboard Balance (cross-group totals)
+ 19  Debt Simplification (minimum transactions algorithm)
+ 20  Suggested Payments (who should pay whom, how much)
+ 21  Add Settlement (record a payment between members)
+ 22  Settlement History (view past settlements per group)
+ 23  Dashboard (subscription card, balance, groups, recent activity)
+ 24  Group List (horizontal cards with balances)
+ 25  Group Detail (members, expenses, balances, tabs)
+ 26  Expense Detail (full expense breakdown)
+ 27  Profile Page (avatar, name, email, contact, credits)
+ 28  Edit Profile (name, phone, default currency)
+ 29  Application Guide (how-to page)
+ 30  Dark Mode (toggle, persisted, Tailwind class strategy)
+ 31  Subscription System (4 plans: Free/Starter/Pro/Business)
+ 32  Group Limit Validation (blocks creation at plan limit)
+ 33  Last-Group Warning (shows upgrade prompt on 5th free group)
+ 34  Group Limit Upgrade Modal (when limit reached)
+ 35  Indian Rupee (₹) Currency Formatting
+ 36  Mobile-First Responsive Design
+ 37  Bottom Navigation (4 tabs: Home, Groups, Plans, Profile)
+ 38  Quick Actions FAB (Add Expense, Create Group, Settle Up)
+ 39  Toast Notifications (success/error/info)
+ 40  Loading Skeletons (pulsing placeholders during load)
+ 41  Empty States (friendly messages when no data)
+ 42  Invite Members (name-based guest member creation)
+
+
+==============================================================================
+7. PAGE DETAILS
+==============================================================================
+
+----------------------------------------------------------------------
+7.1 Authentication Pages
+----------------------------------------------------------------------
+
+  /signin  — Sign In
+    Purpose: User login with email and password
+    Components: AuthLayout, Input, Button
+    Features: Email/password login, Google OAuth button,
+              "Forgot password?" link, "Create account" link
+    States: Loading spinner on submit, error message display,
+            rate limit error display
+
+  /signup  — Sign Up
+    Purpose: New user registration
+    Components: AuthLayout, Input, Button
+    Features: Name + email + password registration, Google OAuth,
+              auto-login on success, email confirmation screen
+    States: Submitting, error display, email confirmation view
+
+  /forgot-password  — Forgot Password
+    Purpose: Request password reset email
+    Components: AuthLayout, Input, Button
+    Features: Email input, cooldown/dedup protection,
+              success confirmation message
+    States: Submitting, email sent confirmation
+
+  /reset-password  — Reset Password
+    Purpose: Set new password after email confirmation
+    Components: AuthLayout, Input, Button
+    Features: New password input, pending guard,
+              cooldown protection, cleanup on unmount
+    States: Submitting, success redirect
+
+----------------------------------------------------------------------
+7.2 Dashboard (/dashboard)
+----------------------------------------------------------------------
+
+  Purpose: Main landing page showing user's financial overview
+  Components: AppLayout, Card, BalanceSummary, RecentExpenses,
+              QuickActions, GroupCard, Badge, Button
+  Features:
+    - Subscription card (plan name, group usage, progress bar,
+      remaining count, upgrade button)
+    - Overall balance summary (total expenses, you paid, you receive,
+      you owe, net balance)
+    - Your Groups section (horizontal scrollable cards with balance badges)
+    - Recent activity feed (last 10 transactions with type indicators)
+    - Quick Actions FAB (add expense, create group, settle up)
+    - Welcome empty state for new users
+  States: Loading (skeleton animation), authenticated, empty (no groups)
+
+----------------------------------------------------------------------
+7.3 Group Pages
+----------------------------------------------------------------------
+
+  /groups  — Group List
+    Purpose: View all user's groups
+    Components: AppLayout, Card
+    Features: Horizontal group cards, empty state, create button
+    States: Empty (no groups), populated list
+
+  /groups/new  — Create Group
+    Purpose: Create a new expense group
+    Components: AppLayout, Input, Button, Select, Card, Modal
+    Features: Group name, category dropdown, description,
+              group limit validation, last-group warning modal,
+              limit-reached upgrade modal
+    States: Form input, upgrade modals
+
+  /groups/:groupId  — Group Detail
+    Purpose: View group members, expenses, and balances
+    Components: AppLayout, Card, Button, MemberList, ExpenseRow,
+                GroupBalanceSummary, ConfirmDialog
+    Features:
+      - Back button + group header (name, stats)
+      - Members card (list + add member input)
+      - Tab navigation (Expenses | Balances | Settle Up)
+      - Expenses tab: expense list with delete, add button
+      - Balances tab: per-member balance, suggested payments
+      - Member removal with expense confirmation dialog
+    States: Loading, active group, empty expenses, delete confirm
+
+  /groups/:groupId/settle  — Settle Up
+    Purpose: Record settlements between group members
+    Components: AppLayout, Card, Button, Input
+    Features: Suggested payment display, settlement amount input,
+              settlement form, balance display
+    States: Loading, empty, settlement form
+
+  /groups/:groupId/settlements  — Settlement History
+    Purpose: View past completed settlements
+    Components: AppLayout, Card
+    Features: Chronological settlement list with status badges
+    States: Empty (no settlements), populated list
+
+----------------------------------------------------------------------
+7.4 Expense Pages
+----------------------------------------------------------------------
+
+  /expenses/new  — Add Expense
+    Purpose: Add a new expense to a group
+    Components: AppLayout, Input, Button, AmountInput,
+                CategoryPicker, SplitTypeSelector, MemberPicker
+    Features:
+      - Description, amount, category selection
+      - Payer selection (which member paid)
+      - Split type selection (equal/percentage/exact/shares)
+      - Member selection for split
+      - Dynamic split input based on split type
+      - Client-side validation
+    States: Form input, submitting, validation errors
+
+  /expenses/:id  — Expense Detail
+    Purpose: View full expense breakdown
+    Components: AppLayout, Card, Button
+    Features: Description, amount, category, payer,
+              split details per member, edit/delete actions
+    States: Loading, expense found, not found
+
+  /expenses/:id/edit  — Edit Expense
+    Purpose: Modify an existing expense
+    Components: AppLayout, Input, Button, AmountInput,
+                CategoryPicker, SplitTypeSelector
+    Features: Pre-filled form with current values,
+              same fields as Add Expense
+    States: Loading, form input, submitting
+
+----------------------------------------------------------------------
+7.5 Subscription (/subscription)
+----------------------------------------------------------------------
+
+  Purpose: View and upgrade subscription plans
+  Components: AppLayout, Card, Button, Badge
+  Features:
+    - 4 plan cards (Free, Starter, Pro, Business)
+    - Current plan indicator
+    - Popular plan badge
+    - Feature list per plan
+    - Upgrade/downgrade buttons
+    - Promotional bottom card
+  States: Plan list, current plan active selection
+
+----------------------------------------------------------------------
+7.6 Profile Pages
+----------------------------------------------------------------------
+
+  /profile  — Profile
+    Purpose: User profile and settings
+    Components: AppLayout, Avatar
+    Features:
+      - Avatar + name + email display
+      - Edit Profile menu item
+      - App Guide menu item
+      - Contact Us card (Instagram link, Email link)
+      - Dark/Light mode toggle
+      - Sign Out button
+      - Application credits (developer info)
+      - Footer ("SplitMate © 2026. All Rights Reserved.")
+    States: Authenticated user view
+
+  /profile/edit  — Edit Profile
+    Purpose: Update profile information
+    Components: AppLayout, Input, Button
+    Features: Display name, phone, default currency editing
+    States: Form input, submitting
+
+----------------------------------------------------------------------
+7.7 Guide (/guide)
+----------------------------------------------------------------------
+
+  Purpose: Application usage instructions
+  Components: AppLayout, Card
+  Features: Step-by-step guide for using SplitMate
+
+----------------------------------------------------------------------
+7.8 404 — Not Found
+----------------------------------------------------------------------
+
+  Purpose: Catch-all for undefined routes
+  Features: Friendly error message with "Go Home" button
+
+
+==============================================================================
+8. CALCULATION ENGINE
+==============================================================================
+
+8.1 Split Types
+
+  Equal Split:
+    share = totalAmount / numberOfMembers
+    Every selected member pays an equal share.
+
+  Percentage Split:
+    share = totalAmount * (percentage / 100)
+    Each member's percentage must be provided; validated to sum to 100.
+
+  Exact Split:
+    share = specifiedAmount
+    Each member's exact share is specified directly.
+
+  Shares Split:
+    share = totalAmount * (memberShares / totalShares)
+    Members are assigned shares (e.g., 2:1:1) and the total is divided
+    proportionally.
+
+8.2 Group Balance Calculation
+
+  For each group, balances are computed per member:
+
+    balance[userId] = sum(amount paid by userId)
+                    - sum(split share of userId)
+                    + sum(settlements from userId)
+                    - sum(settlements to userId)
+
+  Where:
+    - Amounts paid INCREASE the payer's balance
+    - Split shares DECREASE each member's balance (their portion of
+      the expense)
+    - Settlements from A to B: A's balance increases (they are paying),
+      B's balance decreases (they are receiving)
+
+8.3 User Overall Balance (Dashboard)
+
+  Aggregates across ALL groups the user belongs to:
+
+    totalOwed   = sum of positive balances across groups
+    totalOwes   = sum of absolute negative balances across groups
+    net         = totalOwed - totalOwes
+    totalExpenses = sum of all expense amounts in all groups
+    totalPaid     = sum of amounts where the user was the payer
+
+8.4 Debt Simplification Algorithm
+
+  Uses a greedy minimum-transactions approach:
+
+  1. Separate members into creditors (positive balance) and
+     debtors (negative balance), sorted by amount descending.
+  2. Iterate through both lists simultaneously:
+     - Take the smallest of creditor[ci].amount and debtor[di].amount
+     - Create a transaction from debtor to creditor for that amount
+     - Reduce both amounts by that value
+     - Advance past members whose balance is now ~zero (< 0.01)
+  3. Result is the minimum number of transactions needed to
+     zero out all balances.
+
+
+==============================================================================
+9. SUBSCRIPTION SYSTEM
+==============================================================================
+
+9.1 Plans
+
+  Plan        | Price  | Max Groups | Key Features
+  ------------+--------+------------+-------------------------------------------
+  Free        |  ₹0    |     5      | Basic tracking, equal split, dark mode
+  Starter     |  ₹20   |    10      | + percentage/exact split
+  Pro         |  ₹100  |    30      | + expense reports, priority support
+  Business    |  ₹150  |    50      | + multi-currency, data export, admin
+
+9.2 Plan Storage
+
+  Plans are stored as constants in config/constants.js.
+  User subscription status is persisted in localStorage
+  (collection: "subscriptions").
+
+  SubscriptionContext reads the user's subscription from localStorage
+  and falls back to 'free' if none found.
+
+9.3 Group Limit Validation
+
+  - groupCount: counted dynamically by filtering groups where the user
+    has a membership entry
+  - atLimit: true when groupCount >= plan.maxGroups
+  - remaining: plan.maxGroups - groupCount
+
+  CreateGroup checks:
+    If atLimit → show upgrade modal (redirect to subscription)
+    If isLastFreeGroup (Free plan, 4 groups used) →
+      show warning modal with upgrade option
+    Otherwise → create group normally
+
+
+==============================================================================
+10. SECURITY
+==============================================================================
+
+10.1 Authentication Security
+
+  - All passwords are handled by Supabase Auth (bcrypt hashing, never
+    exposed to the client)
+  - Session tokens are managed via Supabase's built-in PKCE flow
+  - Anonymous key (VITE_SUPABASE_ANON_KEY) is a publishable key with
+    RLS restrictions; it is safe for client-side exposure
+  - Rate limiting built into AuthContext (3-second cooldown, dedup)
+  - 10-second safety timeout prevents infinite loading if auth fails
+
+10.2 Session Handling
+
+  - Session persistence via Supabase's getSession() on app init
+  - Real-time session changes via onAuthStateChange subscription
+  - Cleanup: subscription is unsubscribed on unmount
+  - INITIAL_SESSION event handled for PKCE completion
+
+10.3 Password Security
+
+  - Minimum 6 characters (client-side validation)
+  - Weak password detection via authErrors.js
+  - Invalid email format detection
+
+10.4 Database Security (Supabase RLS)
+
+  profiles table:
+    - SELECT: authenticated user can only read own row (auth.uid() = id)
+    - INSERT: authenticated user can only insert own row
+    - UPDATE: authenticated user can only update own row
+    - No user can access another user's profile data
+
+10.5 localStorage Security
+
+  - All data is stored in the browser's localStorage with "splitmate_" prefix
+  - Data is not encrypted (shared device risk)
+  - Arrays are validated before use (Array.isArray check in getAll())
+  - Corrupted data does not crash the application (try-catch wrappers)
+
+
+==============================================================================
+11. DEPLOYMENT DETAILS
+==============================================================================
+
+11.1 Vercel Deployment
+
+  File: vercel.json
+  {
+    "framework": "vite",
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "rewrites": [
+      { "source": "/(.*)", "destination": "/index.html" }
+    ]
+  }
+
+  - Framework preset: vite
+  - All routes rewrite to index.html (SPA support for direct URL access)
+  - Build output: dist/ directory
+
+11.2 Environment Variables (Required)
+
+  VITE_SUPABASE_URL      = Supabase project URL
+  VITE_SUPABASE_ANON_KEY = Supabase anonymous/public key
+
+  Note: The client code strips /rest/v1/ suffix from the URL
+  before passing it to createClient.
+
+11.3 Build Commands
+
+  Development:  npm run dev      → http://localhost:5173
+  Production:   npm run build    → outputs to dist/
+  Preview:      npm run preview  → serve dist/ locally
+
+11.4 Supabase Migration
+
+  Run supabase/migrations/001_create_profiles.sql in your Supabase
+  project's SQL Editor before enabling authentication.
+
+11.5 Production URL
+
+  Not configured by default. After deploying to Vercel, the URL will
+  be provided by Vercel (or a custom domain can be configured).
+
+
+==============================================================================
+12. CURRENT PROJECT STATUS
+==============================================================================
+
+Completed Features:
+  (See Section 6 — all 42 features are implemented and functional)
+
+Pending Features:
+  1. Google OAuth production testing and finalization
+  2. Actual payment gateway integration (currently simulated)
+
+Known Issues / Risks:
+  1. localStorage is shared per-browser — clearing browser data
+     deletes all groups, expenses, and subscriptions
+  2. No data sync between devices
+  3. No data export/backup (planned in Business plan)
+  4. Google OAuth requires production domain verification in Supabase
+  5. Group limit modals may show stale data if subscription changes
+     externally
+  6. No email verification enforcement (depends on Supabase project
+     settings)
+  7. Race condition in Google OAuth redirect flow (needs production
+     testing)
+
+Future Enhancements:
+  1. Real-time sync via Supabase Realtime
+  2. Invite codes for group sharing
+  3. Push notifications for expense additions
+  4. Receipt image upload (OCR for automatic expense entry)
+  5. Multi-currency support with live exchange rates
+  6. Expense report generation (PDF/CSV)
+  7. Recurring expenses (rent, utilities)
+  8. Admin controls for group management
+  9. Web version at custom domain
+ 10. Mobile app (React Native / PWA)
+
+
+==============================================================================
+13. DEVELOPER INFORMATION
+==============================================================================
+
+  Application Name: SplitMate
+  Version:          1.0.0
+
+  Developed By:     Mr. Sanket Naik
+  Role:             Founder & Developer
+
+  Description:
+    SplitMate is a modern expense sharing and bill splitting platform
+    developed by Mr. Sanket Naik to simplify group expense management.
+    The application is designed with a mobile-first approach using React
+    and Tailwind CSS, with Supabase providing authentication and profile
+    storage. All expense and group data is stored locally in the browser,
+    making it fully functional offline without requiring a server for
+    core operations.
+
+  Contact:
+    Website: To be configured
+    Email:   YOUR_EMAIL_ADDRESS
+    Instagram: @YOUR_INSTAGRAM_ID
+
+
+==============================================================================
+14. PROJECT STATISTICS
+==============================================================================
+
+  Total Pages          : 18 (4 auth + 12 protected + 1 guide + 1 not-found)
+  Total Routes         : 17 (4 public + 12 protected + 1 catch-all)
+  Total Components     : 24 (11 UI + 4 form + 3 navigation + 3 dashboard
+                             + 3 group + 1 expense)
+  Total Contexts       : 4 (Auth, Group, Theme, Subscription)
+  Total Custom Hooks   : 1 (useExpenseCalc)
+  Total Utility Files  : 5 (storage, calculators, validators, currency,
+                             authErrors)
+  Total Layouts        : 2 (AppLayout, AuthLayout)
+  Total Config Files   : 1 (constants.js)
+  Total Supabase Tables: 1 (profiles)
+  Total localStorage
+    Collections         : 6 (groups, members, expenses, settlements,
+                             subscriptions, users)
+  Total Subscription
+    Plans               : 4 (Free, Starter, Pro, Business)
+  Total Expense
+    Categories          : 10
+  Total Group
+    Categories          : 5
+  Total Split Types     : 4 (Equal, Percentage, Exact, Shares)
+  Total Nav Items       : 4 (Home, Groups, Plans, Profile)
+  Total Dependencies    : 6 (react, react-dom, react-router-dom,
+                             @supabase/supabase-js) + 5 dev deps
+  Build Size            : ~471 KB JS (gzipped: ~129 KB)
+                          ~28 KB CSS (gzipped: ~6 KB)
+
+
+==============================================================================
+15. EXECUTIVE SUMMARY
+==============================================================================
+
+SplitMate is a production-ready, mobile-first expense sharing platform
+built with React 18, Vite, Tailwind CSS, and Supabase Auth. It enables
+groups to track shared expenses with support for four split types
+(Equal, Percentage, Exact, Shares), automatic balance calculations,
+debt simplification, and settlement tracking.
+
+Architecture:
+  The application follows a hybrid storage model. User authentication
+  and profile management are handled via Supabase (PostgreSQL with
+  Row-Level Security), while all application data  groups, members,
+  expenses, settlements, and subscriptions  is stored locally in the
+  browser's localStorage. This design allows SplitMate to function
+  entirely offline without requiring a dedicated backend for core
+  operations.
+
+User Experience:
+  SplitMate delivers a polished, mobile-optimized experience with
+  dark mode support, loading skeletons, toast notifications, empty
+  states, and smooth animations. The bottom navigation bar provides
+  quick access to the four main sections: Dashboard, Groups, Plans,
+  and Profile. A floating action button enables rapid expense logging.
+
+Monetization:
+  SplitMate implements a tiered subscription model (Free/Starter/Pro/
+  Business) with group-based limits. The Free plan supports up to 5
+  groups with basic features. Paid plans start at ₹20/month and unlock
+  higher group limits, advanced split types, expense reports, and
+  priority support.
+
+Security:
+  Authentication is handled entirely by Supabase Auth, which provides
+  industry-standard password hashing, PKCE-based session management,
+  and OAuth support. The profiles table is protected by Row-Level
+  Security policies that ensure users can only access their own data.
+  Client-side rate limiting prevents auth abuse.
+
+Status:
+  SplitMate v1.0.0 is feature-complete with 42 implemented features
+  across 18 pages and 24 components. Google OAuth integration is
+  implemented but pending production testing. The application builds
+  cleanly (0 errors, 117 modules) and is ready for Vercel deployment.
+
+================================================================================
+                       END OF DOCUMENTATION
+================================================================================
