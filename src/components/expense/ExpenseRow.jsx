@@ -6,7 +6,7 @@ CATEGORIES.forEach((c) => { categoryIcons[c.id] = c.icon; });
 
 export default function ExpenseRow({ expense, onClick }) {
   return (
-    <div onClick={onClick} className="flex items-center gap-3 px-4 py-3.5 active:bg-gray-50 transition-colors cursor-pointer">
+    <div onClick={onClick} className="flex items-center gap-3 px-4 py-3.5 pr-10 active:bg-gray-50 transition-colors cursor-pointer">
       <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-sm flex-shrink-0">
         {categoryIcons[expense.category] || '📋'}
       </div>
