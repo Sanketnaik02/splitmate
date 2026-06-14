@@ -10,7 +10,7 @@ export default function AmountInput({ value, onChange, label, error }) {
   return (
     <div className="space-y-1">
       {label && <label className="block text-sm font-medium text-gray-700">{label}</label>}
-      <div className={`relative flex items-center border rounded-xl transition-all bg-white ${error ? 'border-red-300' : 'focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 border-gray-200'}`}>
+      <div className={`relative flex items-center border rounded-xl transition-all bg-white dark:bg-gray-100 ${error ? 'border-red-300' : 'focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 border-gray-200'}`}>
         <span className="absolute left-4 text-lg font-semibold text-gray-500">₹</span>
         <input
           type="text"

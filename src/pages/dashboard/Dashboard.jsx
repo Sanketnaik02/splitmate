@@ -116,7 +116,7 @@ export default function Dashboard() {
             <div className="w-24 h-4 bg-gray-200 rounded animate-pulse mb-3" />
             <div className="flex gap-3 overflow-x-auto no-scrollbar">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="min-w-[200px] bg-white rounded-2xl p-4 shadow-sm flex-shrink-0">
+                <div key={i} className="min-w-[200px] bg-white dark:bg-gray-50 rounded-2xl p-4 shadow-sm flex-shrink-0">
                   <div className="w-10 h-10 rounded-xl bg-gray-200 animate-pulse mb-3" />
                   <div className="w-28 h-4 bg-gray-200 rounded animate-pulse mb-2" />
                   <div className="w-20 h-3 bg-gray-200 rounded animate-pulse" />
@@ -126,7 +126,7 @@ export default function Dashboard() {
           </div>
           <div>
             <div className="w-24 h-4 bg-gray-200 rounded animate-pulse mb-3" />
-            <div className="bg-white rounded-2xl shadow-sm divide-y divide-gray-100">
+            <div className="bg-white dark:bg-gray-50 rounded-2xl shadow-sm divide-y divide-gray-100 dark:divide-gray-800">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex items-center gap-3 px-4 py-3.5">
                   <div className="w-9 h-9 rounded-xl bg-gray-200 animate-pulse" />
@@ -209,13 +209,13 @@ export default function Dashboard() {
         )}
 
         {groups.length === 0 && (
-          <div className="text-center py-8 bg-white rounded-2xl shadow-sm">
+          <div className="text-center py-8 bg-white dark:bg-gray-50 rounded-2xl shadow-sm">
             <p className="text-4xl mb-2">👋</p>
             <p className="text-gray-500 font-medium">Welcome to SplitMate!</p>
             <p className="text-sm text-gray-400 mt-1">Create your first group to get started</p>
             <button
               onClick={() => navigate('/groups/new')}
-              className="mt-4 px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium shadow-sm"
+              className="mt-4 px-5 py-2.5 bg-primary-600 text-white dark:text-gray-900 rounded-xl text-sm font-medium shadow-sm"
             >
               Create Group
             </button>

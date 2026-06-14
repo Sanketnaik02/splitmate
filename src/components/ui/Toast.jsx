@@ -31,8 +31,8 @@ export function ToastProvider({ children }) {
             className={`pointer-events-auto px-4 py-3 rounded-xl shadow-lg text-sm font-medium max-w-sm w-full animate-slide-up cursor-pointer ${
               toast.type === 'success' ? 'bg-green-600 text-white' :
               toast.type === 'error' ? 'bg-red-600 text-white' :
-              toast.type === 'info' ? 'bg-gray-800 text-white' :
-              'bg-gray-800 text-white'
+              toast.type === 'info' ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900' :
+              'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900'
             }`}
           >
             {toast.message}

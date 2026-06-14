@@ -20,7 +20,7 @@ export default function SplitTypeSelector({ value, onChange }) {
             className={`flex items-start gap-2.5 p-3 rounded-xl border transition-all text-left ${
               value === opt.id
                 ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500'
-                : 'border-gray-100 bg-white hover:bg-gray-50'
+                : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700'
             }`}
           >
             <span className="text-lg mt-0.5">{opt.icon}</span>

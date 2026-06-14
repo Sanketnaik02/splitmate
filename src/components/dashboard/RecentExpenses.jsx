@@ -25,7 +25,7 @@ export default function RecentExpenses({ expenses = [] }) {
   return (
     <div>
       <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Recent Activity</h2>
-      <div className="divide-y divide-gray-100 bg-white rounded-2xl shadow-sm">
+      <div className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-50 rounded-2xl shadow-sm">
         {expenses.map((expense) => {
           const typeInfo = expenseIcons[expense.type] || expenseIcons.owed;
           return (

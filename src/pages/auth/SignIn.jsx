@@ -40,7 +40,7 @@ export default function SignIn() {
         <Button type="submit" fullWidth loading={loading}>Sign In</Button>
         <div className="relative my-4">
           <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100" /></div>
-          <div className="relative flex justify-center"><span className="bg-white px-3 text-xs text-gray-400">or</span></div>
+          <div className="relative flex justify-center"><span className="bg-white dark:bg-gray-100 px-3 text-xs text-gray-400">or</span></div>
         </div>
         <Button type="button" variant="secondary" fullWidth icon="🔴" onClick={signInWithGoogle}>Continue with Google</Button>
       </form>

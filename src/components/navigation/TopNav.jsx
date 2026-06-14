@@ -20,7 +20,7 @@ export default function TopNav({ userName = 'Guest', userAvatar, onAvatarClick, 
         </div>
         <button
           onClick={onSettingsClick}
-          className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-700 active:scale-95 transition-all"
+          className="w-10 h-10 rounded-full bg-white dark:bg-gray-100 shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-700 active:scale-95 transition-all"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3" />

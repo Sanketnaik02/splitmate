@@ -122,7 +122,7 @@ export default function GroupDetail() {
                 setTab(t.id);
               }}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
-                tab === t.id ? 'bg-primary-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                tab === t.id ? 'bg-primary-600 text-white dark:text-gray-900 shadow-sm' : 'bg-white dark:bg-gray-100 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               {t.label}
@@ -131,7 +131,7 @@ export default function GroupDetail() {
         </div>
 
         {tab === 'expenses' && (
-          <div className="bg-white rounded-2xl shadow-sm divide-y divide-gray-100">
+          <div className="bg-white dark:bg-gray-50 rounded-2xl shadow-sm divide-y divide-gray-100 dark:divide-gray-800">
             {expenses.length === 0 ? (
               <div className="text-center py-10">
                 <p className="text-3xl mb-2">💸</p>

@@ -12,7 +12,7 @@ export default function AuthLayout({ children, title, subtitle, alternate }) {
           <p className="text-sm text-gray-500 mt-1">Split expenses, not friendships</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-50 rounded-2xl shadow-sm p-6">
           {title && <h2 className="text-lg font-semibold text-gray-900 mb-1">{title}</h2>}
           {subtitle && <p className="text-sm text-gray-500 mb-5">{subtitle}</p>}
           {children}

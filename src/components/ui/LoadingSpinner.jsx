@@ -10,7 +10,7 @@ export default function LoadingSpinner({ size = 'md', overlay }) {
 
   if (overlay) {
     return (
-      <div className="fixed inset-0 z-50 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center">
+      <div className="fixed inset-0 z-50 bg-white/80 dark:bg-gray-50/80 flex items-center justify-center">
         {spinner}
       </div>
     );
