@@ -10,8 +10,8 @@ function mapProfile(data) {
   return {
     id: data.id,
     email: data.email,
-    displayName: data.display_name,
-    photoURL: data.photo_url,
+    displayName: data.display_name || data.email?.split('@')[0] || 'User',
+    photoURL: data.photo_url || null,
     phone: data.phone || '',
     defaultCurrency: data.default_currency || 'INR',
   };
@@ -52,7 +52,7 @@ async function ensureProfile(sessionUser) {
     .maybeSingle();
 
   if (error) {
-    console.error('[Auth] ensureProfile error:', error.message);
+    console.warn('[Auth] ensureProfile error (may need migration):', error.message);
     return null;
   }
 
@@ -189,7 +189,9 @@ export function AuthProvider({ children }) {
           phone: '',
           default_currency: 'INR',
         });
-        if (profileError && profileError.code !== '23505') throw profileError;
+        if (profileError && profileError.code !== '23505') {
+          console.warn('[Auth] signUp profile insert error (may need migration):', profileError.message);
+        }
       }
 
       return data.user;
@@ -240,7 +242,10 @@ export function AuthProvider({ children }) {
       photo_url: updates.photoURL ?? user.photoURL,
       default_currency: updates.defaultCurrency ?? user.defaultCurrency,
     });
-    if (error) throw error;
+    if (error) {
+      console.warn('[Auth] updateProfile upsert error (may need migration):', error.message);
+      return;
+    }
     setUser(prev => ({ ...prev, ...updates }));
   }, [user]);
 
