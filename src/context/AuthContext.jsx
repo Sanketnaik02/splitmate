@@ -132,12 +132,17 @@ export function AuthProvider({ children }) {
 
     const init = async () => {
       console.log('[Auth] init: checking existing session');
-      const { data: { session } } = await supabase.auth.getSession();
+      const result = await supabase.auth.getSession();
+      console.log('[Auth] DEBUG getSession() result:', result);
+      const { data: { session } } = result;
       if (!cancelled) {
         if (session?.user) {
-          console.log('[Auth] init: session found for', session.user.email);
+          console.log('[Auth] DEBUG session.user:', session.user);
           const userData = await resolveUser(session.user);
-          if (!cancelled) setUser(userData);
+          if (!cancelled) {
+            console.log('[Auth] DEBUG setUser with:', userData);
+            setUser(userData);
+          }
         } else {
           console.log('[Auth] init: no session');
         }
@@ -152,10 +157,16 @@ export function AuthProvider({ children }) {
 
       if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
         const userData = await resolveUser(session.user);
-        if (!cancelled) setUser(userData);
+        if (!cancelled) {
+          console.log('[Auth] DEBUG onAuthStateChange setUser with:', userData);
+          setUser(userData);
+        }
       } else if (event === 'SIGNED_OUT') {
         console.log('[Auth] onAuthStateChange: signed out');
-        if (!cancelled) setUser(null);
+        if (!cancelled) {
+          console.log('[Auth] DEBUG onAuthStateChange setUser(null)');
+          setUser(null);
+        }
       }
 
       if (!cancelled) setLoading(false);
