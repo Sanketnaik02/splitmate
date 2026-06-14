@@ -5,31 +5,66 @@ const AuthContext = createContext();
 
 const AUTH_COOLDOWN_MS = 3000;
 
+function mapProfile(data) {
+  if (!data) return null;
+  return {
+    id: data.id,
+    email: data.email,
+    displayName: data.display_name,
+    photoURL: data.photo_url,
+    phone: data.phone || '',
+    defaultCurrency: data.default_currency || 'INR',
+  };
+}
+
 async function fetchProfile(userId) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', userId)
-    .single();
-  if (data) {
-    return {
-      id: data.id,
-      email: data.email,
-      displayName: data.display_name,
-      photoURL: data.photo_url,
-      phone: data.phone || '',
-      defaultCurrency: data.default_currency || 'INR',
-    };
+    .maybeSingle();
+
+  if (error) {
+    console.error('[Auth] fetchProfile error:', error.message);
+    return null;
   }
-  return null;
+
+  return mapProfile(data);
+}
+
+async function ensureProfile(sessionUser) {
+  const meta = sessionUser.user_metadata || {};
+  const profile = {
+    id: sessionUser.id,
+    email: sessionUser.email || meta.email || '',
+    display_name: meta.display_name || meta.full_name || meta.name || sessionUser.email?.split('@')[0] || 'User',
+    photo_url: meta.avatar_url || meta.picture || null,
+    phone: '',
+    default_currency: 'INR',
+  };
+
+  console.log('[Auth] ensureProfile: upserting profile for', sessionUser.email);
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .upsert(profile, { onConflict: 'id' })
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    console.error('[Auth] ensureProfile error:', error.message);
+    return null;
+  }
+
+  return mapProfile(data);
 }
 
 function mapSessionUser(sessionUser, profile) {
   return profile || {
     id: sessionUser.id,
     email: sessionUser.email,
-    displayName: sessionUser.user_metadata?.display_name || sessionUser.email?.split('@')[0] || 'User',
-    photoURL: sessionUser.user_metadata?.avatar_url || null,
+    displayName: sessionUser.user_metadata?.display_name || sessionUser.user_metadata?.full_name || sessionUser.email?.split('@')[0] || 'User',
+    photoURL: sessionUser.user_metadata?.avatar_url || sessionUser.user_metadata?.picture || null,
     phone: '',
     defaultCurrency: 'INR',
   };
@@ -74,15 +109,37 @@ export function AuthProvider({ children }) {
     };
   }
 
+  async function resolveUser(sessionUser) {
+    console.log('[Auth] resolveUser: checking profile for', sessionUser.email);
+    let profile = await fetchProfile(sessionUser.id);
+
+    if (!profile) {
+      console.log('[Auth] resolveUser: no profile found, creating one');
+      profile = await ensureProfile(sessionUser);
+    }
+
+    if (profile) {
+      console.log('[Auth] resolveUser: profile resolved, setting user');
+    } else {
+      console.warn('[Auth] resolveUser: using fallback from session metadata');
+    }
+
+    return profile || mapSessionUser(sessionUser, null);
+  }
+
   useEffect(() => {
     let cancelled = false;
 
     const init = async () => {
+      console.log('[Auth] init: checking existing session');
       const { data: { session } } = await supabase.auth.getSession();
       if (!cancelled) {
         if (session?.user) {
-          const profile = await fetchProfile(session.user.id);
-          if (!cancelled) setUser(mapSessionUser(session.user, profile));
+          console.log('[Auth] init: session found for', session.user.email);
+          const userData = await resolveUser(session.user);
+          if (!cancelled) setUser(userData);
+        } else {
+          console.log('[Auth] init: no session');
         }
         setLoading(false);
       }
@@ -91,12 +148,16 @@ export function AuthProvider({ children }) {
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[Auth] onAuthStateChange: event=' + event, 'email=' + (session?.user?.email || 'none'));
+
       if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
-        const profile = await fetchProfile(session.user.id);
-        if (!cancelled) setUser(mapSessionUser(session.user, profile));
+        const userData = await resolveUser(session.user);
+        if (!cancelled) setUser(userData);
       } else if (event === 'SIGNED_OUT') {
+        console.log('[Auth] onAuthStateChange: signed out');
         if (!cancelled) setUser(null);
       }
+
       if (!cancelled) setLoading(false);
     });
 
@@ -151,20 +212,16 @@ export function AuthProvider({ children }) {
     }
   }), []);
 
-  // const signInWithGoogle = useCallback(withDedup('google', async () => {
-  //   const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-  //   if (error) throw error;
-  // }), []);
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(withDedup('google', async () => {
+    console.log('[Auth] signInWithGoogle: starting OAuth');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'https://splitmate-ten-psi.vercel.app/dashboard'
-      }
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
     });
-
     if (error) throw error;
-  }, []);
+  }), []);
 
 
   const signOut = useCallback(withDedup('signOut', async () => {
