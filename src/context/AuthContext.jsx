@@ -129,6 +129,14 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
+    let authResolved = false;
+
+    function safeFinish() {
+      if (!cancelled && !authResolved) {
+        authResolved = true;
+        setLoading(false);
+      }
+    }
 
     const init = async () => {
       console.log('[Auth] init: checking existing session');
@@ -142,11 +150,13 @@ export function AuthProvider({ children }) {
           if (!cancelled) {
             console.log('[Auth] DEBUG setUser with:', userData);
             setUser(userData);
+            safeFinish();
+            return;
           }
         } else {
           console.log('[Auth] init: no session');
         }
-        setLoading(false);
+        // Do NOT set loading=false here — wait for onAuthStateChange
       }
     };
 
@@ -155,25 +165,38 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[Auth] onAuthStateChange: event=' + event, 'email=' + (session?.user?.email || 'none'));
 
-      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
+      if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
         const userData = await resolveUser(session.user);
         if (!cancelled) {
           console.log('[Auth] DEBUG onAuthStateChange setUser with:', userData);
           setUser(userData);
+          safeFinish();
         }
       } else if (event === 'SIGNED_OUT') {
         console.log('[Auth] onAuthStateChange: signed out');
         if (!cancelled) {
           console.log('[Auth] DEBUG onAuthStateChange setUser(null)');
           setUser(null);
+          safeFinish();
         }
+      } else if (event === 'INITIAL_SESSION' && !session?.user) {
+        // INITIAL_SESSION confirms there's no session at all
+        console.log('[Auth] init: confirmed no session');
+        safeFinish();
       }
-
-      if (!cancelled) setLoading(false);
     });
+
+    // Safety timeout: force loading=false after 10s regardless
+    const safetyTimeout = setTimeout(() => {
+      if (!authResolved) {
+        console.warn('[Auth] safety timeout: forcing loading=false');
+        safeFinish();
+      }
+    }, 10000);
 
     return () => {
       cancelled = true;
+      clearTimeout(safetyTimeout);
       subscription?.unsubscribe();
     };
   }, []);
