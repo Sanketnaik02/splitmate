@@ -151,10 +151,21 @@ export function AuthProvider({ children }) {
     }
   }), []);
 
-  const signInWithGoogle = useCallback(withDedup('google', async () => {
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+  // const signInWithGoogle = useCallback(withDedup('google', async () => {
+  //   const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+  //   if (error) throw error;
+  // }), []);
+  const signInWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'https://splitmate-ten-psi.vercel.app/dashboard'
+      }
+    });
+
     if (error) throw error;
-  }), []);
+  }, []);
+
 
   const signOut = useCallback(withDedup('signOut', async () => {
     const { error } = await supabase.auth.signOut();
