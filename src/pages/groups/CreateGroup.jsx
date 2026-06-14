@@ -62,7 +62,7 @@ export default function CreateGroup() {
           <h1 className="text-xl font-bold text-gray-900">Create Group</h1>
         </div>
 
-        <Card padding="p-3" className={`mb-4 flex items-center justify-between ${isLastFreeGroup ? 'border-amber-200 ring-1 ring-amber-200' : ''}`}>
+        <Card padding="p-3" className={`mb-4 flex items-center justify-between ${isLastFreeGroup ? 'border-amber-200 ring-1 ring-amber-200 dark:border-amber-700 dark:ring-amber-700' : ''}`}>
           <div>
             <div className="flex items-center gap-2">
               <p className="text-xs text-gray-500">Your Plan: <span className="font-semibold text-gray-700">{plan.icon} {plan.name}</span></p>

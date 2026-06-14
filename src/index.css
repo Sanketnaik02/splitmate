@@ -101,6 +101,20 @@
   .dark .bg-cyan-50 { background-color: #164e63; }
   .dark .text-cyan-500 { color: #22d3ee; }
 
+  .dark .bg-blue-100 { background-color: #1e3a5f; }
+  .dark .bg-blue-500 { background-color: #3b82f6; }
+  .dark .bg-purple-500 { background-color: #a855f7; }
+
+  .dark .bg-amber-50 { background-color: #451a03; }
+  .dark .bg-amber-100 { background-color: #78350f; }
+  .dark .text-amber-700 { color: #fcd34d; }
+  .dark .text-amber-800 { color: #fde68a; }
+  .dark .border-amber-200 { border-color: #92400e; }
+  .dark .ring-amber-200 { --tw-ring-color: #92400e; }
+
+  .dark .hover\:bg-red-700:hover { background-color: #f87171; }
+  .dark .active\:bg-red-800:active { background-color: #fca5a5; }
+
   .dark select {
     background-color: #1f2937;
     color: #ffffff;

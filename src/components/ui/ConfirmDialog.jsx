@@ -12,7 +12,7 @@ export default function ConfirmDialog({ isOpen, onClose, title, message, confirm
         {message && <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{message}</p>}
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
-          <button onClick={() => { onConfirm?.(); onClose(); }} className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white dark:text-gray-900 ${variant === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-800 dark:bg-gray-200 hover:bg-gray-900 dark:hover:bg-gray-300'}`}>
+          <button onClick={() => { onConfirm?.(); onClose(); }} className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white dark:text-gray-900 ${variant === 'danger' ? 'bg-red-600 hover:bg-red-700 dark:hover:bg-red-400' : 'bg-gray-800 dark:bg-gray-200 hover:bg-gray-900 dark:hover:bg-gray-300'}`}>
             {confirmLabel}
           </button>
         </div>
