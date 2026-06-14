@@ -16,6 +16,7 @@ export default function SignUp() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [confirmRequired, setConfirmRequired] = useState(false);
   const submitRef = useRef(false);
 
   const handleSubmit = async (e) => {
@@ -30,8 +31,14 @@ export default function SignUp() {
     submitRef.current = true;
     setSubmitting(true);
     try {
-      await signUp(name, email, password);
-      navigate('/dashboard');
+      const result = await signUp(name, email, password);
+      if (result) {
+        // Auto-logged in
+        navigate('/dashboard');
+      } else {
+        // Email confirmation required
+        setConfirmRequired(true);
+      }
     } catch (err) {
       const msg = getAuthErrorMessage(err);
       setError(msg || err?.message || 'Something went wrong. Try again.');
@@ -55,6 +62,25 @@ export default function SignUp() {
       setGoogleLoading(false);
     }
   };
+
+  if (confirmRequired) {
+    return (
+      <AuthLayout
+        title="Check your email"
+        subtitle=""
+        alternate={{ text: 'Back to', link: 'Sign in', to: '/signin' }}
+      >
+        <div className="text-center py-4">
+          <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">✉️</span>
+          </div>
+          <p className="text-sm text-gray-600 mb-1">We sent a confirmation link to:</p>
+          <p className="text-sm font-semibold text-gray-900 mb-4">{email}</p>
+          <p className="text-xs text-gray-400">Click the link in the email to activate your account, then sign in.</p>
+        </div>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout

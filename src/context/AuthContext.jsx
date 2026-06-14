@@ -215,20 +215,35 @@ export function AuthProvider({ children }) {
       if (error) throw error;
 
       if (data?.user) {
-        const { error: profileError } = await supabase.from('profiles').insert({
-          id: data.user.id,
-          email,
-          display_name: name,
-          photo_url: null,
-          phone: '',
-          default_currency: 'INR',
-        });
-        if (profileError && profileError.code !== '23505') {
-          console.warn('[Auth] signUp profile insert error (may need migration):', profileError.message);
+        try {
+          await supabase.from('profiles').insert({
+            id: data.user.id,
+            email,
+            display_name: name,
+            photo_url: null,
+            phone: '',
+            default_currency: 'INR',
+          });
+        } catch (profileErr) {
+          console.warn('[Auth] signUp profile insert error:', profileErr);
         }
       }
 
-      return data.user;
+      if (data?.session) {
+        let userData;
+        try {
+          userData = await resolveUser(data.user);
+        } catch {
+          userData = null;
+        }
+        if (!userData) {
+          userData = mapSessionUser(data.user, null);
+        }
+        setUser(userData);
+        return userData;
+      }
+
+      return null;
     } finally {
       delete pendingRef.current[key];
     }
@@ -242,7 +257,18 @@ export function AuthProvider({ children }) {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      return data.user;
+
+      let userData;
+      try {
+        userData = await resolveUser(data.user);
+      } catch {
+        userData = null;
+      }
+      if (!userData) {
+        userData = mapSessionUser(data.user, null);
+      }
+      setUser(userData);
+      return userData;
     } finally {
       delete pendingRef.current[key];
     }
