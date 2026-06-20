@@ -29,9 +29,16 @@ export default function CreateGroup() {
   const isLastFreeGroup = planId === 'free' && groupCount === 4;
 
   const doCreateGroup = async () => {
-    const newGroup = await createGroup({ name: name.trim(), category, description });
-    showToast('Group created! Add members to start splitting.', 'success');
-    navigate(`/groups/${newGroup.id}`);
+    try {
+      console.log('[CreateGroup] Calling createGroup...');
+      const newGroup = await createGroup({ name: name.trim(), category, description });
+      console.log('[CreateGroup] createGroup SUCCESS:', JSON.stringify(newGroup));
+      showToast('Group created! Add members to start splitting.', 'success');
+      navigate(`/groups/${newGroup.id}`);
+    } catch (err) {
+      console.error('[CreateGroup] createGroup ERROR:', err.message, JSON.stringify(err));
+      showToast('Failed to create group: ' + err.message, 'error');
+    }
   };
 
   const handleSubmit = (e) => {

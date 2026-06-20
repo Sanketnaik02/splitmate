@@ -2,30 +2,45 @@ import { supabase } from './supabase';
 
 export const groupService = {
   async createGroup({ name, category, description, createdBy, currency }) {
+    const payload = {
+      name,
+      category: category || 'other',
+      description: description || '',
+      created_by: createdBy,
+      currency: currency || 'INR',
+      invite_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+    };
+    console.log('[groupService] createGroup payload:', JSON.stringify(payload, null, 2));
+
     const { data: group, error: groupError } = await supabase
       .from('splitmate_groups')
-      .insert({
-        name,
-        category: category || 'other',
-        description: description || '',
-        created_by: createdBy,
-        currency: currency || 'INR',
-        invite_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
-      })
+      .insert(payload)
       .select()
       .single();
 
+    console.log('[groupService] createGroup response:', {
+      data: group ? JSON.stringify(group) : null,
+      error: groupError ? JSON.stringify(groupError) : null,
+    });
+
     if (groupError) throw groupError;
+
+    const memberPayload = {
+      group_id: group.id,
+      user_id: createdBy,
+      display_name: createdBy,
+      role: 'admin',
+      is_registered: true,
+    };
+    console.log('[groupService] createGroup memberPayload:', JSON.stringify(memberPayload, null, 2));
 
     const { error: memberError } = await supabase
       .from('group_members')
-      .insert({
-        group_id: group.id,
-        user_id: createdBy,
-        display_name: createdBy,
-        role: 'admin',
-        is_registered: true,
-      });
+      .insert(memberPayload);
+
+    console.log('[groupService] createGroup memberResponse:', {
+      error: memberError ? JSON.stringify(memberError) : null,
+    });
 
     if (memberError) throw memberError;
 
