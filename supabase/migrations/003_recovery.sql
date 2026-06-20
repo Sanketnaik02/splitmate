@@ -34,7 +34,7 @@ CREATE INDEX IF NOT EXISTS idx_profiles_splitmate_id ON profiles(splitmate_id);
 -- 6. Create group_invitations table only if missing
 CREATE TABLE IF NOT EXISTS group_invitations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  group_id TEXT NOT NULL,
   sender_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   receiver_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'cancelled')),
