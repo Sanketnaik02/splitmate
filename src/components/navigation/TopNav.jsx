@@ -13,13 +13,13 @@ export default function TopNav({ userName = 'Guest', userAvatar, onAvatarClick, 
     if (!user) { setPendingCount(0); return; }
 
     const fetchCount = async () => {
-      const { data } = await supabase
+      const { count } = await supabase
         .from('group_invitations')
-        .select('id', { count: 'exact', head: true })
+        .select('*', { count: 'exact', head: true })
         .eq('receiver_id', user.id)
         .eq('status', 'pending');
 
-      setPendingCount(data?.length || 0);
+      setPendingCount(count || 0);
     };
 
     fetchCount();

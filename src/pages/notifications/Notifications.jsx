@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { supabase } from '../../lib/supabase';
 import { store } from '../../utils/storage';
+import { groupService } from '../../lib/groupService';
 
 const TABS = [
   { id: 'pending', label: 'Pending' },
@@ -21,6 +22,7 @@ export default function Notifications() {
   const [tab, setTab] = useState('pending');
   const [invitations, setInvitations] = useState([]);
   const [profiles, setProfiles] = useState({});
+  const [groups, setGroups] = useState({});
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(null);
 
@@ -38,6 +40,28 @@ export default function Notifications() {
     }
   }, []);
 
+  const fetchGroupNames = useCallback(async (groupIds) => {
+    const uniqueIds = [...new Set(groupIds.filter(Boolean))];
+    if (uniqueIds.length === 0) return;
+
+    const supabaseGroups = await groupService.getGroupsByIds(uniqueIds);
+    const map = {};
+    const foundInSupabase = new Set();
+    supabaseGroups.forEach((g) => {
+      map[g.id] = g.name;
+      foundInSupabase.add(g.id);
+    });
+
+    uniqueIds.forEach((id) => {
+      if (!foundInSupabase.has(id)) {
+        const localGroup = store.get('groups', id);
+        map[id] = localGroup?.name || 'Unknown Group';
+      }
+    });
+
+    setGroups((prev) => ({ ...prev, ...map }));
+  }, []);
+
   useEffect(() => {
     if (!user) return;
     setLoading(true);
@@ -49,12 +73,14 @@ export default function Notifications() {
       .then(({ data, error }) => {
         if (!error && data) {
           setInvitations(data);
-          const ids = data.flatMap((inv) => [inv.sender_id, inv.receiver_id]);
-          fetchProfiles(ids);
+          const profileIds = data.flatMap((inv) => [inv.sender_id, inv.receiver_id]);
+          fetchProfiles(profileIds);
+          const groupIds = data.map((inv) => inv.group_id);
+          fetchGroupNames(groupIds);
         }
         setLoading(false);
       });
-  }, [user, fetchProfiles]);
+  }, [user, fetchProfiles, fetchGroupNames]);
 
   const getProfileName = (id) => {
     if (id === user?.id) return 'You';
@@ -66,8 +92,7 @@ export default function Notifications() {
   };
 
   const getGroupName = (groupId) => {
-    const group = store.get('groups', groupId);
-    return group?.name || 'Unknown Group';
+    return groups[groupId] || 'Unknown Group';
   };
 
   const handleAccept = async (inv) => {
