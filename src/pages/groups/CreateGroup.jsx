@@ -28,8 +28,8 @@ export default function CreateGroup() {
 
   const isLastFreeGroup = planId === 'free' && groupCount === 4;
 
-  const doCreateGroup = () => {
-    const newGroup = createGroup({ name: name.trim(), category, description });
+  const doCreateGroup = async () => {
+    const newGroup = await createGroup({ name: name.trim(), category, description });
     showToast('Group created! Add members to start splitting.', 'success');
     navigate(`/groups/${newGroup.id}`);
   };

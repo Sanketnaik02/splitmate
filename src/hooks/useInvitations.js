@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { store } from '../utils/storage';
+import { groupService } from '../lib/groupService';
 
 export default function useInvitations(groupId) {
   const { user } = useAuth();
@@ -70,8 +71,14 @@ export default function useInvitations(groupId) {
     if (!receiver) throw new Error('User not found');
     if (receiver.id === user.id) throw new Error('Cannot invite yourself');
 
-    const existingMember = store.where('members', 'groupId', groupId).find((m) => m.userId === receiver.id);
-    if (existingMember) throw new Error('Already a member');
+    const localMember = store.where('members', 'groupId', groupId).find((m) => m.userId === receiver.id);
+    if (localMember) throw new Error('Already a member');
+    try {
+      const isMember = await groupService.isGroupMember(groupId, receiver.id);
+      if (isMember) throw new Error('Already a member');
+    } catch (err) {
+      if (err.message === 'Already a member') throw err;
+    }
 
     const { data: existingInvite, error: inviteCheckError } = await supabase
       .from('group_invitations')
@@ -121,13 +128,23 @@ export default function useInvitations(groupId) {
       .maybeSingle();
 
     const displayName = senderProfile?.data?.display_name || 'User';
-    store.add('members', {
-      groupId: invitation.group_id,
-      userId: user.id,
-      displayName: user.displayName || displayName,
-      role: 'member',
-      isRegistered: true,
-    });
+    try {
+      await groupService.addMember({
+        groupId: invitation.group_id,
+        userId: user.id,
+        displayName: user.displayName || displayName,
+        role: 'member',
+        isRegistered: true,
+      });
+    } catch {
+      store.add('members', {
+        groupId: invitation.group_id,
+        userId: user.id,
+        displayName: user.displayName || displayName,
+        role: 'member',
+        isRegistered: true,
+      });
+    }
 
     await fetchInvitations();
   }, [invitations, user, fetchInvitations]);

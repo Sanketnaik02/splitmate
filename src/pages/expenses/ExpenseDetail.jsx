@@ -4,6 +4,7 @@ import AppLayout from '../../layouts/AppLayout';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import { useAuth } from '../../context/AuthContext';
+import { useGroup } from '../../context/GroupContext';
 import { store } from '../../utils/storage';
 import { formatCurrency } from '../../utils/currency';
 import { getDisplayName } from '../../utils/displayName';
@@ -12,6 +13,7 @@ export default function ExpenseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { groups } = useGroup();
   const expense = store.get('expenses', id);
 
   if (!expense) {
@@ -22,9 +24,8 @@ export default function ExpenseDetail() {
     );
   }
 
-  const payer = store.get('users', expense.paidBy);
-  const group = store.get('groups', expense.groupId);
-  const groupMembers = group ? store.where('members', 'groupId', expense.groupId) : [];
+  const group = groups.find((g) => g.id === expense.groupId) || null;
+  const groupMembers = group ? (group.members || []) : [];
 
   return (
     <AppLayout userName={user?.displayName || 'User'}>

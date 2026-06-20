@@ -67,7 +67,7 @@ export default function Dashboard() {
       if (!user) return { totalOwed: 0, totalOwes: 0, net: 0, totalExpenses: 0, totalPaid: 0 };
       const enriched = groups.map((g) => ({
         ...g,
-        members: store.where('members', 'groupId', g.id),
+        members: g.members || [],
       }));
       return computeUserOverallBalance(user.id, enriched, allExpenses, allSettlements);
     } catch (err) {

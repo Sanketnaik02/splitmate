@@ -18,12 +18,12 @@ export default function EditExpense() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { groups, setActiveGroup, updateExpense, members: ctxMembers } = useGroup();
+  const { groups, updateExpense } = useGroup();
   const { showToast } = useToast();
 
   const original = store.get('expenses', id);
   const group = groups.find((g) => g.id === original?.groupId);
-  const groupMembers = group ? (group.members || []) : original ? store.where('members', 'groupId', original.groupId) : [];
+  const groupMembers = group ? (group.members || []) : [];
 
   const [description, setDescription] = useState(original?.description || '');
   const [amount, setAmount] = useState(original ? String(original.amount) : '');

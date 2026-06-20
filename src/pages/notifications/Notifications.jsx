@@ -106,13 +106,23 @@ export default function Notifications() {
 
       if (error) throw error;
 
-      store.add('members', {
-        groupId: inv.group_id,
-        userId: user.id,
-        displayName: user.displayName,
-        role: 'member',
-        isRegistered: true,
-      });
+      try {
+        await groupService.addMember({
+          groupId: inv.group_id,
+          userId: user.id,
+          displayName: user.displayName,
+          role: 'member',
+          isRegistered: true,
+        });
+      } catch {
+        store.add('members', {
+          groupId: inv.group_id,
+          userId: user.id,
+          displayName: user.displayName,
+          role: 'member',
+          isRegistered: true,
+        });
+      }
 
       setInvitations((prev) => prev.map((i) => i.id === inv.id ? { ...i, status: 'accepted' } : i));
       showToast('Invitation accepted! You are now a member.', 'success');
