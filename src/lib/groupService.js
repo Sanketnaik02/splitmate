@@ -10,7 +10,6 @@ export const groupService = {
       currency: currency || 'INR',
       invite_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
     };
-    console.log('[groupService] createGroup payload:', JSON.stringify(payload, null, 2));
 
     const { data: group, error: groupError } = await supabase
       .from('splitmate_groups')
@@ -18,29 +17,27 @@ export const groupService = {
       .select()
       .single();
 
-    console.log('[groupService] createGroup response:', {
-      data: group ? JSON.stringify(group) : null,
-      error: groupError ? JSON.stringify(groupError) : null,
-    });
-
     if (groupError) throw groupError;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', createdBy)
+      .single();
+
+    const displayName = profile?.display_name || createdBy;
 
     const memberPayload = {
       group_id: group.id,
       user_id: createdBy,
-      display_name: createdBy,
+      display_name: displayName,
       role: 'admin',
       is_registered: true,
     };
-    console.log('[groupService] createGroup memberPayload:', JSON.stringify(memberPayload, null, 2));
 
     const { error: memberError } = await supabase
       .from('group_members')
       .insert(memberPayload);
-
-    console.log('[groupService] createGroup memberResponse:', {
-      error: memberError ? JSON.stringify(memberError) : null,
-    });
 
     if (memberError) throw memberError;
 
