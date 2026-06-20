@@ -22,6 +22,8 @@ import SettlementHistory from './pages/settlements/SettlementHistory';
 import Subscription from './pages/subscription/Subscription';
 import Profile from './pages/profile/Profile';
 import EditProfile from './pages/profile/EditProfile';
+import ProfileCompletion from './pages/profile/ProfileCompletion';
+import Notifications from './pages/notifications/Notifications';
 import ApplicationGuide from './pages/guide/ApplicationGuide';
 import NotFound from './pages/NotFound';
 
@@ -51,6 +53,8 @@ export default function App() {
               <Route path="/subscription" element={<Subscription />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/profile/edit" element={<EditProfile />} />
+              <Route path="/complete-profile" element={<ProfileCompletion />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/guide" element={<ApplicationGuide />} />
             </Route>
 

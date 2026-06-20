@@ -14,6 +14,8 @@ function mapProfile(data) {
     photoURL: data.photo_url || null,
     phone: data.phone || '',
     defaultCurrency: data.default_currency || 'INR',
+    splitmateId: data.splitmate_id || '',
+    profileCompleted: data.profile_completed || false,
   };
 }
 
@@ -41,6 +43,7 @@ async function ensureProfile(sessionUser) {
     photo_url: meta.avatar_url || meta.picture || null,
     phone: '',
     default_currency: 'INR',
+    splitmate_id: undefined,
   };
 
   console.log('[Auth] ensureProfile: upserting profile for', sessionUser.email);
@@ -67,6 +70,8 @@ function mapSessionUser(sessionUser, profile) {
     photoURL: sessionUser.user_metadata?.avatar_url || sessionUser.user_metadata?.picture || null,
     phone: '',
     defaultCurrency: 'INR',
+    splitmateId: '',
+    profileCompleted: false,
   };
 }
 
@@ -295,6 +300,7 @@ export function AuthProvider({ children }) {
       phone: updates.phone ?? user.phone,
       photo_url: updates.photoURL ?? user.photoURL,
       default_currency: updates.defaultCurrency ?? user.defaultCurrency,
+      profile_completed: updates.profileCompleted ?? user.profileCompleted,
     });
     if (error) {
       console.warn('[Auth] updateProfile upsert error (may need migration):', error.message);
@@ -303,8 +309,21 @@ export function AuthProvider({ children }) {
     setUser(prev => ({ ...prev, ...updates }));
   }, [user]);
 
+  const completeProfile = useCallback(async (phone, displayNameOverride) => {
+    if (!user) return;
+    const { error } = await supabase.from('profiles').upsert({
+      id: user.id,
+      email: user.email,
+      display_name: displayNameOverride || user.displayName,
+      phone: phone,
+      profile_completed: true,
+    });
+    if (error) throw error;
+    setUser(prev => ({ ...prev, phone, profileCompleted: true, displayName: displayNameOverride || prev.displayName }));
+  }, [user]);
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signInWithGoogle, signOut, updateProfile }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signInWithGoogle, signOut, updateProfile, completeProfile }}>
       {children}
     </AuthContext.Provider>
   );

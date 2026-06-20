@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '../../layouts/AppLayout';
 import Avatar from '../../components/ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../../components/ui/Toast';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/sanket.naik02/';
 const EMAIL_ADDRESS = 'sanketnaik393@gmail.com';
@@ -16,6 +18,8 @@ export default function Profile() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { showToast } = useToast();
+  const [copied, setCopied] = useState(false);
 
   const handleMenu = (id) => {
     if (id === 'edit') navigate('/profile/edit');
@@ -27,8 +31,29 @@ export default function Profile() {
       <div className="pt-1">
         <div className="flex flex-col items-center py-6">
           <Avatar src={user?.photoURL} name={user?.displayName} size="xl" />
-          <h2 className="text-xl font-bold text-gray-900 mt-3">{user?.displayName}</h2>
-          <p className="text-sm text-gray-500">{user?.email}</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-3">{user?.displayName}</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-300">{user?.email}</p>
+          {user?.splitmateId && (
+            <div className="mt-3 flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-300">SplitMate ID:</span>
+              <span className="text-sm font-bold text-gray-900 dark:text-white">{user.splitmateId}</span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(user.splitmateId);
+                  setCopied(true);
+                  showToast('SplitMate ID copied!', 'success');
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
+                  copied
+                    ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -49,8 +74,8 @@ export default function Profile() {
 
         <div className="mt-6">
           <div className="bg-white dark:bg-gray-50 rounded-xl shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Contact Us</h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wide mb-1">Contact Us</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
               Have questions, suggestions, feature requests or found a bug?
               <br />
               Feel free to reach out.
@@ -71,7 +96,7 @@ export default function Profile() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900">Instagram</p>
-                <p className="text-xs text-gray-500 truncate">sanket.naik02</p>
+                <p className="text-xs text-gray-500 dark:text-gray-300 truncate">sanket.naik02</p>
               </div>
               <svg className="text-gray-300 flex-shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
@@ -92,7 +117,7 @@ export default function Profile() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900">Email</p>
-                <p className="text-xs text-gray-500 truncate">{EMAIL_ADDRESS}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-300 truncate">{EMAIL_ADDRESS}</p>
               </div>
               <svg className="text-gray-300 flex-shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
@@ -125,16 +150,16 @@ export default function Profile() {
 
         <div className="mt-8 text-center">
           <div className="bg-white dark:bg-gray-50 rounded-xl shadow-sm p-5">
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
               This application was designed and developed by{' '}
               <span className="font-semibold text-gray-900">Mr. Sanket Naik</span>.
             </p>
             <div className="mt-2">
-              <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Founder & Developer</span>
+              <span className="text-[11px] font-medium text-gray-400 dark:text-gray-300 uppercase tracking-wider">Founder & Developer</span>
               <p className="text-sm font-semibold text-gray-900">Mr. Sanket Naik</p>
             </div>
           </div>
-          <p className="text-[11px] text-gray-400 mt-4">SplitMate &copy; 2026. All Rights Reserved.</p>
+          <p className="text-[11px] text-gray-400 dark:text-gray-300 mt-4">SplitMate &copy; 2026. All Rights Reserved.</p>
         </div>
       </div>
     </AppLayout>

@@ -13,6 +13,7 @@ import { useGroup } from '../../context/GroupContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { computeUserOverallBalance } from '../../utils/calculators';
 import { store } from '../../utils/storage';
+import { getDisplayName } from '../../utils/displayName';
 
 function BalanceSkeleton() {
   return (
@@ -85,7 +86,6 @@ export default function Dashboard() {
         .filter((e) => gIds.includes(e.groupId))
         .forEach((e) => {
           const group = groups.find((g) => g.id === e.groupId);
-          const payer = store.get('users', e.paidBy);
           const share = e.splitDetails?.[user.id] || 0;
           items.push({
             id: e.id,
@@ -93,7 +93,7 @@ export default function Dashboard() {
             category: e.category,
             amount: share,
             paidBy: e.paidBy,
-            paidByName: payer?.displayName || e.paidBy,
+            paidByName: getDisplayName(e.paidBy, group?.members || []),
             groupName: group?.name || '',
             userShare: share,
             type: e.paidBy === user.id ? 'owed' : 'owe',
@@ -105,13 +105,13 @@ export default function Dashboard() {
         .filter((s) => gIds.includes(s.groupId) && (s.fromUserId === user.id || s.toUserId === user.id))
         .forEach((s) => {
           const group = groups.find((g) => g.id === s.groupId);
-          const fromUser = store.get('users', s.fromUserId);
+          const settledName = getDisplayName(s.fromUserId, group?.members || []);
           items.push({
             id: s.id,
-            description: `Settled with ${fromUser?.displayName || s.fromUserId}`,
+            description: `Settled with ${settledName}`,
             amount: s.amount,
             paidBy: s.fromUserId,
-            paidByName: fromUser?.displayName || s.fromUserId,
+            paidByName: settledName,
             groupName: group?.name || '',
             type: 'settlement',
             date: new Date(s.createdAt),

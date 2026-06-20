@@ -3,7 +3,7 @@ import { CATEGORIES } from '../../config/constants';
 export default function CategoryPicker({ value, onChange }) {
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">Category</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Category</label>
       <div className="grid grid-cols-5 gap-2">
         {CATEGORIES.map((cat) => (
           <button

@@ -3,7 +3,7 @@ import React from 'react';
 export default function Select({ label, value, onChange, options, placeholder = 'Select...', error, className = '' }) {
   return (
     <div className="space-y-1">
-      {label && <label className="block text-sm font-medium text-gray-700">{label}</label>}
+      {label && <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">{label}</label>}
       <select
         value={value}
         onChange={onChange}

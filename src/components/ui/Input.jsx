@@ -6,7 +6,7 @@ export default function Input({ label, error, icon, type = 'text', className = '
   return (
     <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">{label}</label>
       )}
       <div className={`relative flex items-center border rounded-xl transition-all bg-white dark:bg-gray-100 ${focused ? 'border-primary-500 ring-2 ring-primary-500/20' : error ? 'border-red-300' : 'border-gray-200'} ${className}`}>
         {icon && <span className="absolute left-3 text-gray-500 dark:text-gray-300 text-lg">{icon}</span>}

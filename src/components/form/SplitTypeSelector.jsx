@@ -10,7 +10,7 @@ const splitOptions = [
 export default function SplitTypeSelector({ value, onChange }) {
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">Split Type</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Split Type</label>
       <div className="grid grid-cols-2 gap-2">
         {splitOptions.map((opt) => (
           <button

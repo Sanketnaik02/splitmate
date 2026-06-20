@@ -7,6 +7,7 @@ import AmountInput from '../../components/form/AmountInput';
 import CategoryPicker from '../../components/form/CategoryPicker';
 import SplitTypeSelector from '../../components/form/SplitTypeSelector';
 import MemberPicker from '../../components/form/MemberPicker';
+import ValidationPopup from '../../components/ui/ValidationPopup';
 import { useGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
@@ -31,14 +32,29 @@ export default function AddExpense() {
   const [splitType, setSplitType] = useState('equal');
   const [splitAmong, setSplitAmong] = useState(groupMembers.map((m) => m.userId));
   const [errors, setErrors] = useState({});
+  const [validationPopup, setValidationPopup] = useState({ isOpen: false, title: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
+
+  const showValidationPopup = (title, message) => {
+    setValidationPopup({ isOpen: true, title, message });
+  };
+
+  const closeValidationPopup = () => {
+    setValidationPopup({ isOpen: false, title: '', message: '' });
+  };
 
   const validate = () => {
     const errs = {};
     const descErr = validateExpenseDescription(description);
-    if (descErr) errs.description = descErr;
+    if (descErr) {
+      showValidationPopup('Description Required', 'Please enter a description before adding an expense.');
+      return false;
+    }
     const amtErr = validateExpenseAmount(amount);
-    if (amtErr) errs.amount = amtErr;
+    if (amtErr) {
+      showValidationPopup('Invalid Amount', amtErr);
+      return false;
+    }
     if (splitAmong.length === 0) errs.splitAmong = 'Select at least one person';
     if (!paidBy) errs.paidBy = 'Select who paid';
     setErrors(errs);
@@ -100,7 +116,7 @@ export default function AddExpense() {
           <CategoryPicker value={category} onChange={setCategory} />
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Paid by</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Paid by</label>
             <select
               value={paidBy}
               onChange={(e) => setPaidBy(e.target.value)}
@@ -124,6 +140,13 @@ export default function AddExpense() {
           </div>
         </form>
       </div>
+
+      <ValidationPopup
+        isOpen={validationPopup.isOpen}
+        onClose={closeValidationPopup}
+        title={validationPopup.title}
+        message={validationPopup.message}
+      />
     </AppLayout>
   );
 }

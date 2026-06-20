@@ -8,18 +8,18 @@ export default function AuthLayout({ children, title, subtitle, alternate }) {
           <div className="w-14 h-14 rounded-2xl bg-primary-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-600/30">
             <span className="text-2xl font-bold text-white">S</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">SplitMate</h1>
-          <p className="text-sm text-gray-500 mt-1">Split expenses, not friendships</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">SplitMate</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">Split expenses, not friendships</p>
         </div>
 
         <div className="bg-white dark:bg-gray-50 rounded-2xl shadow-sm p-6">
-          {title && <h2 className="text-lg font-semibold text-gray-900 mb-1">{title}</h2>}
-          {subtitle && <p className="text-sm text-gray-500 mb-5">{subtitle}</p>}
+          {title && <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{title}</h2>}
+          {subtitle && <p className="text-sm text-gray-500 dark:text-gray-300 mb-5">{subtitle}</p>}
           {children}
         </div>
 
         {alternate && (
-          <p className="text-center text-sm text-gray-500 mt-5">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-300 mt-5">
             {alternate.text} <Link to={alternate.to} className="text-primary-600 font-medium hover:text-primary-700">{alternate.link}</Link>
           </p>
         )}

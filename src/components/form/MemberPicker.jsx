@@ -10,7 +10,7 @@ export default function MemberPicker({ members, selectedIds = [], onChange, labe
 
   return (
     <div className="space-y-1">
-      {label && <label className="block text-sm font-medium text-gray-700">{label}</label>}
+      {label && <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">{label}</label>}
       <div className="space-y-1">
         {members.map((member) => {
           const isSelected = selectedIds.includes(member.userId);
@@ -33,7 +33,7 @@ export default function MemberPicker({ members, selectedIds = [], onChange, labe
                 )}
               </div>
               <Avatar name={member.displayName} size="sm" />
-              <span className={`text-sm font-medium ${isSelected ? 'text-primary-700' : 'text-gray-700'}`}>{member.displayName}</span>
+              <span className={`text-sm font-medium ${isSelected ? 'text-primary-700' : 'text-gray-700 dark:text-gray-200'}`}>{member.displayName}</span>
             </button>
           );
         })}

@@ -109,7 +109,7 @@ export default function ApplicationGuide() {
                 <div className="space-y-2 ml-1 mt-1">
                   {section.items.map((item, j) => (
                     <div key={j} className="text-sm">
-                      <span className="font-semibold text-gray-700">{item.label}:</span>{' '}
+                      <span className="font-semibold text-gray-700 dark:text-gray-200">{item.label}:</span>{' '}
                       <span className="text-gray-700 dark:text-gray-200">{item.desc}</span>
                     </div>
                   ))}

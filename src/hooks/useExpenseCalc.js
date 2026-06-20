@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { computeGroupBalances, simplifyDebts } from '../utils/calculators';
+import { getDisplayName } from '../utils/displayName';
 
 export default function useExpenseCalc(members, expenses, settlements) {
   const balances = useMemo(
@@ -12,10 +13,7 @@ export default function useExpenseCalc(members, expenses, settlements) {
     [balances]
   );
 
-  const getMemberName = (userId) => {
-    const m = members.find((m) => m.userId === userId);
-    return m?.displayName || userId;
-  };
+  const getMemberName = (userId) => getDisplayName(userId, members);
 
   return { balances, suggestedPayments, getMemberName };
 }

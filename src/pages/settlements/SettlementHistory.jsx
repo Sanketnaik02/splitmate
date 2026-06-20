@@ -5,20 +5,18 @@ import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import { useGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
-import { store } from '../../utils/storage';
 import { formatCurrency } from '../../utils/currency';
+import { getDisplayName } from '../../utils/displayName';
 
 export default function SettlementHistory() {
   const { groupId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setActiveGroup, activeGroup, settlements } = useGroup();
+  const { setActiveGroup, activeGroup, members, settlements } = useGroup();
 
   React.useEffect(() => {
     setActiveGroup(groupId);
   }, [groupId, setActiveGroup]);
-
-  const getUser = (uid) => store.get('users', uid) || { displayName: uid };
 
   return (
     <AppLayout userName={user?.displayName || 'User'}>
@@ -40,15 +38,15 @@ export default function SettlementHistory() {
         ) : (
           <div className="space-y-3">
             {[...settlements].reverse().map((s) => {
-              const from = getUser(s.fromUserId);
-              const to = getUser(s.toUserId);
+              const fromName = getDisplayName(s.fromUserId, members);
+              const toName = getDisplayName(s.toUserId, members);
               return (
                 <Card key={s.id} padding="p-4" className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${s.status === 'completed' ? 'bg-green-100' : 'bg-yellow-100'}`}>
                     {s.status === 'completed' ? '✅' : '⏳'}
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{from.displayName} → {to.displayName}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{fromName} → {toName}</p>
                     <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
                       {new Date(s.createdAt).toLocaleDateString()} · {s.note || 'Settlement'}
                     </p>

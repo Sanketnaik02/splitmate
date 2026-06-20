@@ -12,7 +12,10 @@ import { useGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
 import { store } from '../../utils/storage';
 import { formatCurrency } from '../../utils/currency';
+import { getDisplayName } from '../../utils/displayName';
 import { useToast } from '../../components/ui/Toast';
+import { supabase } from '../../lib/supabase';
+import { isSplitmateId, formatSplitmateId } from '../../utils/splitmateId';
 
 export default function GroupDetail() {
   const { groupId } = useParams();
@@ -24,13 +27,16 @@ export default function GroupDetail() {
   const [tab, setTab] = useState('expenses');
   const [inviteName, setInviteName] = useState('');
   const [showInvite, setShowInvite] = useState(false);
+  const [inviteMode, setInviteMode] = useState('guest');
+  const [splitmateId, setSplitmateId] = useState('');
+  const [inviteSubmitting, setInviteSubmitting] = useState(false);
   const [removingMember, setRemovingMember] = useState(null);
 
   React.useEffect(() => {
     setActiveGroup(groupId);
   }, [groupId, setActiveGroup]);
 
-  const handleAddMember = () => {
+  const handleAddGuestMember = () => {
     if (!inviteName.trim()) return;
     const name = inviteName.trim();
     const existing = members.find((m) => m.displayName.toLowerCase() === name.toLowerCase());
@@ -50,6 +56,75 @@ export default function GroupDetail() {
     showToast(`${name} added to group`, 'success');
     setInviteName('');
     setShowInvite(false);
+    setInviteMode('guest');
+  };
+
+  const handleInviteRegisteredUser = async () => {
+    if (!splitmateId.trim()) return;
+    const formatted = formatSplitmateId(splitmateId);
+    if (!isSplitmateId(formatted)) {
+      showToast('Invalid SplitMate ID format', 'error');
+      return;
+    }
+
+    setInviteSubmitting(true);
+    try {
+      const { data: receiver, error: receiverError } = await supabase
+        .from('profiles')
+        .select('id, display_name, splitmate_id')
+        .eq('splitmate_id', formatted)
+        .maybeSingle();
+
+      if (receiverError) throw receiverError;
+      if (!receiver) {
+        showToast('User not found', 'error');
+        return;
+      }
+      if (receiver.id === user?.id) {
+        showToast('Cannot invite yourself', 'error');
+        return;
+      }
+
+      const existingMember = members.find((m) => m.userId === receiver.id);
+      if (existingMember) {
+        showToast('Already a member', 'error');
+        return;
+      }
+
+      const { data: existingInvite } = await supabase
+        .from('group_invitations')
+        .select('id')
+        .eq('group_id', groupId)
+        .eq('sender_id', user.id)
+        .eq('receiver_id', receiver.id)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+      if (existingInvite) {
+        showToast('Invitation already pending', 'error');
+        return;
+      }
+
+      const { error: insertError } = await supabase
+        .from('group_invitations')
+        .insert({
+          group_id: groupId,
+          sender_id: user.id,
+          receiver_id: receiver.id,
+          status: 'pending',
+        });
+
+      if (insertError) throw insertError;
+
+      showToast(`Invitation sent to ${receiver.display_name}`, 'success');
+      setSplitmateId('');
+      setShowInvite(false);
+      setInviteMode('guest');
+    } catch (err) {
+      showToast(err.message || 'Failed to send invitation', 'error');
+    } finally {
+      setInviteSubmitting(false);
+    }
   };
 
   const handleRemoveMember = (userId) => {
@@ -119,15 +194,52 @@ export default function GroupDetail() {
           </div>
           <MemberList members={members} onRemoveMember={isAdmin ? handleRemoveMember : undefined} />
           {showInvite && (
-            <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex gap-2">
-              <input
-                value={inviteName}
-                onChange={(e) => setInviteName(e.target.value)}
-                placeholder="Enter member name"
-                className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-100 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:border-primary-500"
-                onKeyDown={(e) => e.key === 'Enter' && handleAddMember()}
-              />
-              <Button size="sm" onClick={handleAddMember}>Add</Button>
+            <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+              <div className="flex border-b border-gray-100 dark:border-gray-700">
+                <button
+                  onClick={() => setInviteMode('guest')}
+                  className={`flex-1 py-2.5 text-xs font-medium text-center transition-colors ${
+                    inviteMode === 'guest'
+                      ? 'text-primary-600 border-b-2 border-primary-600'
+                      : 'text-gray-500 dark:text-gray-300'
+                  }`}
+                >
+                  Add Guest Member
+                </button>
+                <button
+                  onClick={() => setInviteMode('registered')}
+                  className={`flex-1 py-2.5 text-xs font-medium text-center transition-colors ${
+                    inviteMode === 'registered'
+                      ? 'text-primary-600 border-b-2 border-primary-600'
+                      : 'text-gray-500 dark:text-gray-300'
+                  }`}
+                >
+                  Invite SplitMate User
+                </button>
+              </div>
+              {inviteMode === 'guest' ? (
+                <div className="px-4 py-3 flex gap-2">
+                  <input
+                    value={inviteName}
+                    onChange={(e) => setInviteName(e.target.value)}
+                    placeholder="Enter member name"
+                    className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-100 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:border-primary-500"
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddGuestMember()}
+                  />
+                  <Button size="sm" onClick={handleAddGuestMember}>Add</Button>
+                </div>
+              ) : (
+                <div className="px-4 py-3 flex gap-2">
+                  <input
+                    value={splitmateId}
+                    onChange={(e) => setSplitmateId(e.target.value.toUpperCase())}
+                    placeholder="SM10001"
+                    className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-100 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:border-primary-500"
+                    onKeyDown={(e) => e.key === 'Enter' && handleInviteRegisteredUser()}
+                  />
+                  <Button size="sm" onClick={handleInviteRegisteredUser} loading={inviteSubmitting}>Send</Button>
+                </div>
+              )}
             </div>
           )}
         </Card>
@@ -168,7 +280,7 @@ export default function GroupDetail() {
                     <ExpenseRow
                       expense={{
                         ...exp,
-                        paidByName: getMemberName(exp.paidBy) || store.get('users', exp.paidBy)?.displayName || exp.paidBy,
+                        paidByName: getDisplayName(exp.paidBy, members),
                       }}
                       onClick={() => navigate(`/expenses/${exp.id}`)}
                     />

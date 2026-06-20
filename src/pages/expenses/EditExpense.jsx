@@ -7,6 +7,7 @@ import AmountInput from '../../components/form/AmountInput';
 import CategoryPicker from '../../components/form/CategoryPicker';
 import SplitTypeSelector from '../../components/form/SplitTypeSelector';
 import MemberPicker from '../../components/form/MemberPicker';
+import ValidationPopup from '../../components/ui/ValidationPopup';
 import { useGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
@@ -32,6 +33,7 @@ export default function EditExpense() {
   const [splitAmong, setSplitAmong] = useState(
     original?.splitDetails ? Object.keys(original.splitDetails) : groupMembers.map((m) => m.userId)
   );
+  const [validationPopup, setValidationPopup] = useState({ isOpen: false, title: '', message: '' });
 
   if (!original) {
     return (
@@ -41,11 +43,23 @@ export default function EditExpense() {
     );
   }
 
+  const showValidationPopup = (title, message) => {
+    setValidationPopup({ isOpen: true, title, message });
+  };
+
+  const closeValidationPopup = () => {
+    setValidationPopup({ isOpen: false, title: '', message: '' });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const amt = parseFloat(amount);
-    if (!description.trim() || isNaN(amt) || amt <= 0) {
-      showToast('Please fill in all fields', 'error');
+    if (!description.trim()) {
+      showValidationPopup('Description Required', 'Please enter a description before editing this expense.');
+      return;
+    }
+    if (isNaN(amt) || amt <= 0) {
+      showValidationPopup('Invalid Amount', 'Amount must be greater than 0.');
       return;
     }
     if (splitAmong.length === 0) {
@@ -101,7 +115,7 @@ export default function EditExpense() {
           <CategoryPicker value={category} onChange={setCategory} />
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Paid by</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Paid by</label>
             <select
               value={paidBy}
               onChange={(e) => setPaidBy(e.target.value)}
@@ -122,6 +136,13 @@ export default function EditExpense() {
           </div>
         </form>
       </div>
+
+      <ValidationPopup
+        isOpen={validationPopup.isOpen}
+        onClose={closeValidationPopup}
+        title={validationPopup.title}
+        message={validationPopup.message}
+      />
     </AppLayout>
   );
 }

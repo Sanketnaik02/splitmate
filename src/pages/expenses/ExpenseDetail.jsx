@@ -6,6 +6,7 @@ import Badge from '../../components/ui/Badge';
 import { useAuth } from '../../context/AuthContext';
 import { store } from '../../utils/storage';
 import { formatCurrency } from '../../utils/currency';
+import { getDisplayName } from '../../utils/displayName';
 
 export default function ExpenseDetail() {
   const { id } = useParams();
@@ -23,6 +24,7 @@ export default function ExpenseDetail() {
 
   const payer = store.get('users', expense.paidBy);
   const group = store.get('groups', expense.groupId);
+  const groupMembers = group ? store.where('members', 'groupId', expense.groupId) : [];
 
   return (
     <AppLayout userName={user?.displayName || 'User'}>
@@ -42,7 +44,7 @@ export default function ExpenseDetail() {
         <Card padding="p-5" className="text-center mb-4">
           <p className="text-4xl mb-2">💸</p>
           <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(expense.amount)}</p>
-          <p className="text-lg font-medium text-gray-700 mt-1">{expense.description}</p>
+          <p className="text-lg font-medium text-gray-700 dark:text-gray-200 mt-1">{expense.description}</p>
           <div className="flex items-center justify-center gap-2 mt-3">
             <Badge variant="primary">{expense.category}</Badge>
             <Badge variant="default">{expense.splitType}</Badge>
@@ -54,7 +56,7 @@ export default function ExpenseDetail() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-300">Paid by</span>
-              <span className="font-medium">{payer?.displayName || expense.paidBy}</span>
+              <span className="font-medium">{getDisplayName(expense.paidBy, groupMembers)}</span>
             </div>
             {group && (
               <div className="flex justify-between">
@@ -74,10 +76,9 @@ export default function ExpenseDetail() {
             <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-2">Split Details</p>
             <div className="space-y-2">
               {Object.entries(expense.splitDetails).map(([uid, share]) => {
-                const u = store.get('users', uid);
                 return (
                   <div key={uid} className="flex justify-between text-sm">
-                    <span className="text-gray-700">{uid === user?.id ? 'You' : u?.displayName || uid}</span>
+                    <span className="text-gray-700 dark:text-gray-200">{uid === user?.id ? 'You' : getDisplayName(uid, groupMembers)}</span>
                     <span className="font-medium">{formatCurrency(share)}</span>
                   </div>
                 );
