@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Avatar from '../ui/Avatar';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { isAdmin } from '../../utils/admin';
 
 export default function TopNav({ userName = 'Guest', userAvatar, onAvatarClick, onSettingsClick }) {
   const navigate = useNavigate();
@@ -49,7 +50,14 @@ export default function TopNav({ userName = 'Guest', userAvatar, onAvatarClick, 
           <Avatar src={userAvatar} name={userName} size="md" />
           <div>
             <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">{greeting}</p>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white -mt-0.5">{userName}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white -mt-0.5">{userName}</h1>
+              {isAdmin(user?.email) && (
+                <span className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-0.5 -mt-0.5">
+                  👑 Founder
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">

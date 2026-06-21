@@ -35,6 +35,8 @@ export default function AdminDashboard() {
   const [error, setError] = useState(null);
 
   const authorized = isAdmin(user?.email);
+  console.log('[AdminDashboard] user.email:', user?.email);
+  console.log('[AdminDashboard] isAdmin():', authorized);
 
   useEffect(() => {
     if (!authorized) {

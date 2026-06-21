@@ -5,6 +5,8 @@ import Avatar from '../../components/ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../components/ui/Toast';
+import Card from '../../components/ui/Card';
+import { isAdmin } from '../../utils/admin';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/sanket.naik02/';
 const EMAIL_ADDRESS = 'sanketnaik393@gmail.com';
@@ -71,6 +73,26 @@ export default function Profile() {
             </button>
           ))}
         </div>
+
+        {isAdmin(user?.email) && (
+          <div className="mt-6">
+            <Card padding="p-4" elevated>
+              <button
+                onClick={() => navigate('/admin')}
+                className="w-full flex items-center gap-3 active:scale-[0.99] transition-transform"
+              >
+                <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-base flex-shrink-0">👑</div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Founder Tools</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-300">View analytics and manage SplitMate</p>
+                </div>
+                <svg className="text-gray-300 flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            </Card>
+          </div>
+        )}
 
         <div className="mt-6">
           <div className="bg-white dark:bg-gray-50 rounded-xl shadow-sm p-5">

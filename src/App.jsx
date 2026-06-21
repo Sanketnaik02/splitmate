@@ -31,6 +31,8 @@ import NotFound from './pages/NotFound';
 
 function RequireAdmin({ children }) {
   const { user } = useAuth();
+  console.log('[RequireAdmin] user.email:', user?.email);
+  console.log('[RequireAdmin] isAdmin():', isAdmin(user?.email));
   if (!isAdmin(user?.email)) return <Navigate to="/dashboard" replace />;
   return children;
 }
