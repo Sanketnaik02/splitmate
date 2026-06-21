@@ -6,7 +6,7 @@ export default function MemberList({ members, onRemoveMember }) {
     <div className="divide-y divide-gray-50 dark:divide-gray-700">
       {members.map((member) => {
         const balance = member.balance || 0;
-        const isRegistered = member.isRegistered === true;
+        const isRegistered = member.is_registered === true;
         return (
           <div key={member.userId} className="flex items-center gap-3 px-4 py-2.5 group">
             <Avatar name={member.displayName} size="sm" />

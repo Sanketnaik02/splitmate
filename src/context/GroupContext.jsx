@@ -156,6 +156,26 @@ export function GroupProvider({ children }) {
     }
   }, [activeGroup, loadGroups]);
 
+  const addGuestMember = useCallback(async (groupId, displayName) => {
+    try {
+      const member = await groupService.addMember({
+        groupId, userId: null, displayName, role: 'member', isRegistered: false,
+      });
+      if (activeGroup?.id === groupId) {
+        setMembers(prev => [...prev, normalizeMember(member)]);
+      }
+      await loadGroups();
+      return member;
+    } catch {
+      const member = store.add('members', { groupId, userId: null, displayName, role: 'member', is_registered: false });
+      if (activeGroup?.id === groupId) {
+        setMembers(prev => [...prev, normalizeMember(member)]);
+      }
+      await loadGroups();
+      return member;
+    }
+  }, [activeGroup, loadGroups]);
+
   const removeMember = useCallback(async (groupId, userId) => {
     try {
       const gMembers = await groupService.getGroupMembers(groupId);
@@ -213,7 +233,7 @@ export function GroupProvider({ children }) {
   return (
     <GroupContext.Provider value={{
       groups, activeGroup, setActiveGroup, members, expenses, settlements, loading,
-      createGroup, addMember, removeMember,
+      createGroup, addMember, addGuestMember, removeMember,
       addExpense, updateExpense, deleteExpense,
       addSettlement, updateSettlement, loadGroups,
     }}>

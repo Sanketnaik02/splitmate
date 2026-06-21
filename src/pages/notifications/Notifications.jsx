@@ -43,22 +43,29 @@ export default function Notifications() {
   const fetchGroupNames = useCallback(async (groupIds) => {
     const uniqueIds = [...new Set(groupIds.filter(Boolean))];
     if (uniqueIds.length === 0) return;
+    console.log('[DIAG] fetchGroupNames input:', uniqueIds, 'types:', uniqueIds.map(id => typeof id));
 
     const supabaseGroups = await groupService.getGroupsByIds(uniqueIds);
+    console.log('[DIAG] getGroupsByIds returned:', JSON.stringify(supabaseGroups), 'count:', supabaseGroups.length);
+
     const map = {};
     const foundInSupabase = new Set();
     supabaseGroups.forEach((g) => {
+      console.log('[DIAG] Group object keys:', Object.keys(g), 'id type:', typeof g.id, 'name type:', typeof g.name, 'raw name:', JSON.stringify(g.name));
       map[g.id] = g.name;
       foundInSupabase.add(g.id);
     });
 
     uniqueIds.forEach((id) => {
       if (!foundInSupabase.has(id)) {
-        const localGroup = store.get('groups', id);
-        map[id] = localGroup?.name || 'Unknown Group';
+        console.log('[DIAG] group_id NOT found in Supabase table, id:', id, '(type:', typeof id + ')');
+        map[id] = 'Unknown Group';
+      } else {
+        console.log('[DIAG] group_id FOUND in Supabase:', id, '→ name:', JSON.stringify(map[id]));
       }
     });
 
+    console.log('[DIAG] final map keys:', Object.keys(map), 'values:', JSON.stringify(map));
     setGroups((prev) => ({ ...prev, ...map }));
   }, []);
 
@@ -107,14 +114,23 @@ export default function Notifications() {
       if (error) throw error;
 
       try {
-        await groupService.addMember({
+        console.log('[DIAG] addMember payload:', {
           groupId: inv.group_id,
           userId: user.id,
           displayName: user.displayName,
           role: 'member',
           isRegistered: true,
         });
-      } catch {
+        const memberResult = await groupService.addMember({
+          groupId: inv.group_id,
+          userId: user.id,
+          displayName: user.displayName,
+          role: 'member',
+          isRegistered: true,
+        });
+        console.log('[DIAG] addMember success:', JSON.stringify(memberResult));
+      } catch (addErr) {
+        console.log('[DIAG] addMember ERROR:', addErr.message, JSON.stringify(addErr));
         store.add('members', {
           groupId: inv.group_id,
           userId: user.id,

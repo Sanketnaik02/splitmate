@@ -10,7 +10,6 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useExpenseCalc from '../../hooks/useExpenseCalc';
 import { useGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
-import { store } from '../../utils/storage';
 import { formatCurrency } from '../../utils/currency';
 import { getDisplayName } from '../../utils/displayName';
 import { useToast } from '../../components/ui/Toast';
@@ -22,7 +21,7 @@ export default function GroupDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
-  const { setActiveGroup, activeGroup, members, expenses, settlements, addMember, removeMember, deleteExpense } = useGroup();
+  const { setActiveGroup, activeGroup, members, expenses, settlements, addMember, addGuestMember, removeMember, deleteExpense } = useGroup();
   const { balances, suggestedPayments, getMemberName } = useExpenseCalc(members, expenses, settlements);
   const [tab, setTab] = useState('expenses');
   const [inviteName, setInviteName] = useState('');
@@ -36,7 +35,7 @@ export default function GroupDetail() {
     setActiveGroup(groupId);
   }, [groupId, setActiveGroup]);
 
-  const handleAddGuestMember = () => {
+  const handleAddGuestMember = async () => {
     if (!inviteName.trim()) return;
     const name = inviteName.trim();
     const existing = members.find((m) => m.displayName.toLowerCase() === name.toLowerCase());
@@ -44,19 +43,15 @@ export default function GroupDetail() {
       showToast('Already a member', 'error');
       return;
     }
-    const guestUser = store.add('users', {
-      displayName: name,
-      email: '',
-      password: '',
-      photoURL: null,
-      phone: '',
-      defaultCurrency: 'INR',
-    });
-    addMember(groupId, guestUser.id, guestUser.displayName);
-    showToast(`${name} added to group`, 'success');
-    setInviteName('');
-    setShowInvite(false);
-    setInviteMode('guest');
+    try {
+      await addGuestMember(groupId, name);
+      showToast(`${name} added to group`, 'success');
+      setInviteName('');
+      setShowInvite(false);
+      setInviteMode('guest');
+    } catch (err) {
+      showToast(err.message || 'Failed to add guest', 'error');
+    }
   };
 
   const handleInviteRegisteredUser = async () => {
@@ -223,7 +218,7 @@ export default function GroupDetail() {
                     value={inviteName}
                     onChange={(e) => setInviteName(e.target.value)}
                     placeholder="Enter member name"
-                    className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-100 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:border-primary-500"
+                    className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:border-primary-500"
                     onKeyDown={(e) => e.key === 'Enter' && handleAddGuestMember()}
                   />
                   <Button size="sm" onClick={handleAddGuestMember}>Add</Button>
@@ -234,7 +229,7 @@ export default function GroupDetail() {
                     value={splitmateId}
                     onChange={(e) => setSplitmateId(e.target.value.toUpperCase())}
                     placeholder="SM10001"
-                    className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-100 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:border-primary-500"
+                    className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:border-primary-500"
                     onKeyDown={(e) => e.key === 'Enter' && handleInviteRegisteredUser()}
                   />
                   <Button size="sm" onClick={handleInviteRegisteredUser} loading={inviteSubmitting}>Send</Button>

@@ -85,10 +85,12 @@ export const groupService = {
   async getGroupsByIds(groupIds) {
     const valid = (groupIds || []).filter(Boolean);
     if (valid.length === 0) return [];
+    console.log('[DIAG] getGroupsByIds query:', { table: 'splitmate_groups', ids: valid });
     const { data, error } = await supabase
       .from('splitmate_groups')
       .select('id, name')
       .in('id', valid);
+    console.log('[DIAG] getGroupsByIds response:', { data, error });
     if (error) throw error;
     return data || [];
   },
@@ -104,6 +106,7 @@ export const groupService = {
   },
 
   async addMember({ groupId, userId, displayName, role = 'member', isRegistered = true }) {
+    console.log('[DIAG] addMember raw payload:', { group_id: groupId, user_id: userId, display_name: displayName, role, is_registered: isRegistered });
     const { data, error } = await supabase
       .from('group_members')
       .insert({
@@ -116,6 +119,7 @@ export const groupService = {
       .select()
       .single();
 
+    console.log('[DIAG] addMember raw response:', { data, error, errorJson: error ? JSON.stringify(error) : null });
     if (error) throw error;
     return data;
   },
