@@ -1,7 +1,7 @@
 import { store } from './storage';
 
 export function getDisplayName(uid, members = []) {
-  const member = members.find((m) => m.userId === uid);
+  const member = members.find((m) => String(m.userId) === String(uid));
   if (member?.displayName) return member.displayName;
 
   const user = store.get('users', uid);

@@ -27,7 +27,7 @@ export default function SettleUp() {
 
   const handleSettle = (fromId, toId, amount) => {
     const existing = settlements.find(
-      (s) => s.fromUserId === fromId && s.toUserId === toId && s.status === 'pending'
+      (s) => String(s.fromUserId) === String(fromId) && String(s.toUserId) === String(toId) && s.status === 'pending'
     );
     if (existing) {
       updateSettlement(existing.id, { status: 'completed', settledAt: new Date().toISOString() });

@@ -38,7 +38,6 @@ function BalanceSkeleton() {
 }
 
 export default function Dashboard() {
-  console.log('[Dashboard] loaded');
   const navigate = useNavigate();
   const { user } = useAuth();
   const { groups } = useGroup();
@@ -48,8 +47,6 @@ export default function Dashboard() {
     const timer = setTimeout(() => setLoading(false), 600);
     return () => clearTimeout(timer);
   }, []);
-
-  console.log('[Dashboard] user:', user?.id, 'groups:', groups?.length);
 
   const { plan, groupCount, remaining } = useSubscription();
   const [allExpenses, setAllExpenses] = React.useState([]);
@@ -143,7 +140,7 @@ export default function Dashboard() {
         .forEach((s) => {
           const group = groups.find((g) => g.id === s.groupId);
           const members = group?.members || [];
-          const settledName = members.find(m => m.userId === s.fromUserId)?.displayName
+          const settledName = members.find(m => String(m.userId) === String(s.fromUserId))?.displayName
             || JSON.parse(localStorage.getItem('splitmate_users') || '{}')[s.fromUserId]?.displayName
             || 'Unknown';
           items.push({

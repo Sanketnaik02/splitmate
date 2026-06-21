@@ -8,7 +8,7 @@ const GroupContext = createContext();
 function normalizeMember(m) {
   return {
     ...m,
-    userId: m.user_id || m.userId,
+    userId: m.user_id ?? m.userId ?? null,
     displayName: m.display_name || m.displayName,
   };
 }
@@ -84,7 +84,7 @@ export function GroupProvider({ children }) {
         } catch (e) { console.error('[GroupContext] loadGroups getGroupExpenses error:', e?.message || e); }
         if (!gExpenses.length) {
           gExpenses = store.where('expenses', 'groupId', g.id);
-          if (gExpenses.length) console.log('[GroupContext] loadGroups fell back to localStorage for', g.id, 'count:', gExpenses.length);
+          // fell back to localStorage
         }
         const enriched = enrich(g, gExpenses, gMembers);
         if (enriched) merged.push(enriched);
@@ -135,7 +135,7 @@ export function GroupProvider({ children }) {
       } catch (e) { console.error('[GroupContext] setActiveGroup getGroupExpenses error:', e?.message || e); }
       if (!gExpenses.length) {
         gExpenses = store.where('expenses', 'groupId', groupId);
-        if (gExpenses.length) console.log('[GroupContext] setActiveGroup fell back to localStorage for', groupId);
+        // fell back to localStorage
       }
       setExpenses(gExpenses);
       setSettlements(store.where('settlements', 'groupId', groupId));

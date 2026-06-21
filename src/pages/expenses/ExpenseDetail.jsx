@@ -98,7 +98,7 @@ export default function ExpenseDetail() {
             <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-2">Split Details</p>
             <div className="space-y-2">
               {Object.entries(expense.splitDetails).map(([uid, share]) => {
-                const splitMember = groupMembers.find(m => m.userId === uid);
+                const splitMember = groupMembers.find(m => String(m.userId) === String(uid));
                 const isYou = uid === user?.id;
                 return (
                   <div key={uid} className="flex justify-between text-sm">
