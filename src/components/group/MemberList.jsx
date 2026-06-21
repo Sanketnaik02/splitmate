@@ -16,7 +16,7 @@ export default function MemberList({ members, onRemoveMember }) {
                 <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${
                   isRegistered
                     ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
+                    : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-white'
                 }`}>
                   {isRegistered ? 'Registered' : 'Guest'}
                 </span>
