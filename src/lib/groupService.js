@@ -298,4 +298,69 @@ export const groupService = {
 
     if (error) throw error;
   },
+
+  // ──────────────────────────────────────────────
+  // Settlement CRUD
+  // ──────────────────────────────────────────────
+
+  async createSettlement(groupId, data, userId) {
+    const { data: settlement, error } = await supabase
+      .from('settlements')
+      .insert({
+        group_id: groupId,
+        from_member_id: data.from_member_id,
+        to_member_id: data.to_member_id,
+        amount: data.amount,
+        note: data.note || '',
+        status: data.status || 'completed',
+        created_by: userId,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return settlement;
+  },
+
+  async getGroupSettlements(groupId) {
+    const { data, error } = await supabase
+      .from('settlements')
+      .select('*')
+      .eq('group_id', groupId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getSettlementById(id) {
+    const { data, error } = await supabase
+      .from('settlements')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateSettlement(id, data) {
+    const payload = { ...data, updated_at: new Date().toISOString() };
+    const { error } = await supabase
+      .from('settlements')
+      .update(payload)
+      .eq('id', id);
+
+    if (error) throw error;
+    return this.getSettlementById(id);
+  },
+
+  async deleteSettlement(id) {
+    const { error } = await supabase
+      .from('settlements')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
 };

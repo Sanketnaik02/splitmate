@@ -50,29 +50,40 @@ export default function Dashboard() {
 
   const { plan, groupCount, remaining } = useSubscription();
   const [allExpenses, setAllExpenses] = React.useState([]);
-  const allSettlements = React.useMemo(() => {
-    try { return JSON.parse(localStorage.getItem('splitmate_settlements') || '[]'); }
-    catch { return []; }
-  }, []);
+  const [allSettlements, setAllSettlements] = React.useState([]);
 
   React.useEffect(() => {
-    if (!user || !groups.length) { setAllExpenses([]); return; }
+    if (!user || !groups.length) { setAllExpenses([]); setAllSettlements([]); return; }
     let cancelled = false;
     (async () => {
-      const results = [];
+      const expenseResults = [];
+      const settlementResults = [];
       for (const g of groups) {
         try {
           const exps = await groupService.getGroupExpenses(g.id);
-          results.push(...exps);
+          expenseResults.push(...exps);
+        } catch { /* fall back to localStorage */ }
+        try {
+          const setts = await groupService.getGroupSettlements(g.id);
+          settlementResults.push(...setts);
         } catch { /* fall back to localStorage */ }
       }
-      if (!results.length) {
+      if (!expenseResults.length) {
         try {
           const local = JSON.parse(localStorage.getItem('splitmate_expenses') || '[]');
-          results.push(...local);
+          expenseResults.push(...local);
         } catch { /* ignore */ }
       }
-      if (!cancelled) setAllExpenses(results);
+      if (!settlementResults.length) {
+        try {
+          const local = JSON.parse(localStorage.getItem('splitmate_settlements') || '[]');
+          settlementResults.push(...local);
+        } catch { /* ignore */ }
+      }
+      if (!cancelled) {
+        setAllExpenses(expenseResults);
+        setAllSettlements(settlementResults);
+      }
     })();
     return () => { cancelled = true; };
   }, [user, groups]);
@@ -136,22 +147,37 @@ export default function Dashboard() {
         });
 
       allSettlements
-        .filter((s) => gIds.includes(s.groupId) && (s.fromUserId === user.id || s.toUserId === user.id))
+        .filter((s) => {
+          const gid = s.group_id || s.groupId;
+          if (!gIds.includes(gid)) return false;
+          const group = groups.find(g => g.id === gid);
+          const groupMembers = group?.members || [];
+          if (s.from_member_id !== undefined) {
+            return groupMembers.some(m => m.id === s.from_member_id) || groupMembers.some(m => m.id === s.to_member_id);
+          }
+          return s.fromUserId === user.id || s.toUserId === user.id;
+        })
         .forEach((s) => {
-          const group = groups.find((g) => g.id === s.groupId);
-          const members = group?.members || [];
-          const settledName = members.find(m => String(m.userId) === String(s.fromUserId))?.displayName
-            || JSON.parse(localStorage.getItem('splitmate_users') || '{}')[s.fromUserId]?.displayName
-            || 'Unknown';
+          const group = groups.find((g) => g.id === (s.group_id || s.groupId));
+          const groupMembers = group?.members || [];
+          let settledName = 'Unknown';
+          if (s.from_member_id !== undefined) {
+            const fm = groupMembers.find(m => m.id === s.from_member_id);
+            settledName = fm?.displayName || 'Unknown';
+          } else {
+            settledName = groupMembers.find(m => String(m.userId) === String(s.fromUserId))?.displayName
+              || JSON.parse(localStorage.getItem('splitmate_users') || '{}')[s.fromUserId]?.displayName
+              || 'Unknown';
+          }
           items.push({
             id: s.id,
             description: `Settled with ${settledName}`,
             amount: s.amount,
-            paidBy: s.fromUserId,
+            paidBy: s.from_member_id || s.fromUserId,
             paidByName: settledName,
             groupName: group?.name || '',
             type: 'settlement',
-            date: new Date(s.createdAt),
+            date: new Date(s.created_at || s.createdAt || s.settled_at),
           });
         });
 

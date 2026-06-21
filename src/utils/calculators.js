@@ -40,42 +40,43 @@ export function getSplitLabel(type) {
 export function computeGroupBalances(members, expenses, settlements) {
   const balances = {};
   members.forEach((m) => { balances[m.userId] = 0; });
-  console.log('[computeGroupBalances] members userIds:', members.map(m => ({ id: m.id, userId: m.userId, displayName: m.displayName, userIdType: typeof m.userId, userIdStrictNull: m.userId === null })));
-  console.log('[computeGroupBalances] initial balance keys:', Object.keys(balances));
 
   expenses.forEach((exp) => {
     if (exp.paid_by_member_id !== undefined && exp.splits) {
       const payerMember = members.find(m => m.id === exp.paid_by_member_id);
-      console.log('[computeGroupBalances] new-shape expense:', { desc: exp.description, amount: exp.amount, paid_by_member_id: exp.paid_by_member_id, payerMemberId: payerMember?.id, payerUserId: payerMember?.userId, payerUserIdType: typeof payerMember?.userId });
       if (payerMember && balances[payerMember.userId] !== undefined)
         balances[payerMember.userId] += Number(exp.amount);
       (exp.splits || []).forEach((s) => {
         const splitMember = members.find(m => m.id === s.member_id);
-        console.log('[computeGroupBalances] split:', { member_id: s.member_id, share_amount: s.share_amount, splitMemberId: splitMember?.id, splitUserId: splitMember?.userId, splitUserIdType: typeof splitMember?.userId });
         if (splitMember && balances[splitMember.userId] !== undefined)
           balances[splitMember.userId] -= Number(s.share_amount);
       });
     } else {
-      console.log('[computeGroupBalances] old-shape expense:', { desc: exp.description, amount: exp.amount, paidBy: exp.paidBy, paidByType: typeof exp.paidBy });
       if (balances[exp.paidBy] !== undefined) balances[exp.paidBy] += exp.amount;
       if (exp.splitDetails) {
         Object.entries(exp.splitDetails).forEach(([uid, share]) => {
-          console.log('[computeGroupBalances] old-shape split:', { uid, uidType: typeof uid, share });
           if (balances[uid] !== undefined) balances[uid] -= share;
         });
       }
     }
   });
 
-  settlements
+  (settlements || [])
     .filter((s) => s.status === 'completed')
     .forEach((s) => {
-      console.log('[computeGroupBalances] settlement:', { fromUserId: s.fromUserId, fromUserIdType: typeof s.fromUserId, toUserId: s.toUserId, toUserIdType: typeof s.toUserId, amount: s.amount });
-      if (balances[s.fromUserId] !== undefined) balances[s.fromUserId] += s.amount;
-      if (balances[s.toUserId] !== undefined) balances[s.toUserId] -= s.amount;
+      if (s.from_member_id !== undefined) {
+        const fromMember = members.find(m => m.id === s.from_member_id);
+        const toMember = members.find(m => m.id === s.to_member_id);
+        if (fromMember && balances[fromMember.userId] !== undefined)
+          balances[fromMember.userId] += Number(s.amount);
+        if (toMember && balances[toMember.userId] !== undefined)
+          balances[toMember.userId] -= Number(s.amount);
+      } else {
+        if (balances[s.fromUserId] !== undefined) balances[s.fromUserId] += Number(s.amount);
+        if (balances[s.toUserId] !== undefined) balances[s.toUserId] -= Number(s.amount);
+      }
     });
 
-  console.log('[computeGroupBalances] final balances:', JSON.parse(JSON.stringify(balances)));
   return balances;
 }
 
@@ -98,7 +99,6 @@ export function simplifyDebts(balances) {
   while (ci < creditors.length && di < debtors.length) {
     const amt = Math.min(creditors[ci].amount, debtors[di].amount);
     txns.push({ from: debtors[di].userId, to: creditors[ci].userId, amount: Math.round(amt * 100) / 100 });
-    console.log('[simplifyDebts] txn:', { from: debtors[di].userId, fromType: typeof debtors[di].userId, to: creditors[ci].userId, toType: typeof creditors[ci].userId, amount: amt });
     creditors[ci].amount -= amt;
     debtors[di].amount -= amt;
     if (creditors[ci].amount < 0.01) ci++;

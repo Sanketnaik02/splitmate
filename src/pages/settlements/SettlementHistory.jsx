@@ -38,8 +38,16 @@ export default function SettlementHistory() {
         ) : (
           <div className="space-y-3">
             {[...settlements].reverse().map((s) => {
-              const fromName = getDisplayName(s.fromUserId, members);
-              const toName = getDisplayName(s.toUserId, members);
+              let fromName, toName;
+              if (s.from_member_id !== undefined) {
+                const fm = members.find(m => m.id === s.from_member_id);
+                const tm = members.find(m => m.id === s.to_member_id);
+                fromName = fm?.displayName || 'Unknown';
+                toName = tm?.displayName || 'Unknown';
+              } else {
+                fromName = getDisplayName(s.fromUserId, members);
+                toName = getDisplayName(s.toUserId, members);
+              }
               return (
                 <Card key={s.id} padding="p-4" className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${s.status === 'completed' ? 'bg-green-100' : 'bg-yellow-100'}`}>
@@ -48,7 +56,7 @@ export default function SettlementHistory() {
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">{fromName} → {toName}</p>
                     <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
-                      {new Date(s.createdAt).toLocaleDateString()} · {s.note || 'Settlement'}
+                      {new Date(s.created_at || s.createdAt).toLocaleDateString()} · {s.note || 'Settlement'}
                     </p>
                   </div>
                   <div className="text-right">

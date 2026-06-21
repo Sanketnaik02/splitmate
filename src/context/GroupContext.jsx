@@ -35,11 +35,9 @@ export function GroupProvider({ children }) {
       const seen = new Set();
       const merged = [];
 
-      const enrich = (g, gExpenses, gMembers) => {
+      const enrich = (g, gExpenses, gMembers, gSettlements) => {
         if (seen.has(g.id)) return null;
         seen.add(g.id);
-
-        const gSettlements = store.where('settlements', 'groupId', g.id);
 
         const balances = {};
         gMembers.forEach(m => { balances[m.userId] = 0; });
@@ -62,10 +60,21 @@ export function GroupProvider({ children }) {
             }
           }
         });
-        gSettlements.filter(s => s.status === 'completed').forEach(s => {
-          if (balances[s.fromUserId] !== undefined) balances[s.fromUserId] += s.amount;
-          if (balances[s.toUserId] !== undefined) balances[s.toUserId] -= s.amount;
-        });
+        (gSettlements || [])
+          .filter(s => s.status === 'completed')
+          .forEach(s => {
+            if (s.from_member_id !== undefined) {
+              const fromMember = gMembers.find(m => m.id === s.from_member_id);
+              const toMember = gMembers.find(m => m.id === s.to_member_id);
+              if (fromMember && balances[fromMember.userId] !== undefined)
+                balances[fromMember.userId] += Number(s.amount);
+              if (toMember && balances[toMember.userId] !== undefined)
+                balances[toMember.userId] -= Number(s.amount);
+            } else {
+              if (balances[s.fromUserId] !== undefined) balances[s.fromUserId] += s.amount;
+              if (balances[s.toUserId] !== undefined) balances[s.toUserId] -= s.amount;
+            }
+          });
 
         return {
           ...g,
@@ -84,16 +93,23 @@ export function GroupProvider({ children }) {
         } catch (e) { console.error('[GroupContext] loadGroups getGroupExpenses error:', e?.message || e); }
         if (!gExpenses.length) {
           gExpenses = store.where('expenses', 'groupId', g.id);
-          // fell back to localStorage
         }
-        const enriched = enrich(g, gExpenses, gMembers);
+        let gSettlements = [];
+        try {
+          gSettlements = await groupService.getGroupSettlements(g.id);
+        } catch (e) { console.error('[GroupContext] loadGroups getGroupSettlements error:', e?.message || e); }
+        if (!gSettlements.length) {
+          gSettlements = store.where('settlements', 'groupId', g.id);
+        }
+        const enriched = enrich(g, gExpenses, gMembers, gSettlements);
         if (enriched) merged.push(enriched);
       }
 
       for (const g of localGroups) {
         const gMembers = store.where('members', 'groupId', g.id).map(normalizeMember);
         const gExpenses = store.where('expenses', 'groupId', g.id);
-        const enriched = enrich(g, gExpenses, gMembers);
+        const gSettlements = store.where('settlements', 'groupId', g.id);
+        const enriched = enrich(g, gExpenses, gMembers, gSettlements);
         if (enriched) merged.push(enriched);
       }
 
@@ -138,7 +154,14 @@ export function GroupProvider({ children }) {
         // fell back to localStorage
       }
       setExpenses(gExpenses);
-      setSettlements(store.where('settlements', 'groupId', groupId));
+      let gSettlements = [];
+      try {
+        gSettlements = await groupService.getGroupSettlements(groupId);
+      } catch (e) { console.error('[GroupContext] setActiveGroup getGroupSettlements error:', e?.message || e); }
+      if (!gSettlements.length) {
+        gSettlements = store.where('settlements', 'groupId', groupId);
+      }
+      setSettlements(gSettlements);
     } else {
       setMembers([]);
       setExpenses([]);
@@ -240,19 +263,20 @@ export function GroupProvider({ children }) {
     await loadGroups();
   }, [activeGroup, loadGroups]);
 
-  const addSettlement = useCallback((groupId, settlementData) => {
-    const s = store.add('settlements', { ...settlementData, groupId });
+  const addSettlement = useCallback(async (groupId, settlementData) => {
+    if (!user) throw new Error('Not authenticated');
+    const s = await groupService.createSettlement(groupId, settlementData, user.id);
     if (activeGroup?.id === groupId) setSettlements(prev => [...prev, s]);
-    loadGroups();
+    await loadGroups();
     return s;
-  }, [activeGroup, loadGroups]);
+  }, [activeGroup, loadGroups, user]);
 
-  const updateSettlement = useCallback((settlementId, updates) => {
-    const updated = store.update('settlements', settlementId, updates);
+  const updateSettlement = useCallback(async (settlementId, updates) => {
+    const updated = await groupService.updateSettlement(settlementId, updates);
     if (updated && activeGroup) {
       setSettlements(prev => prev.map(s => s.id === settlementId ? { ...s, ...updated } : s));
     }
-    loadGroups();
+    await loadGroups();
     return updated;
   }, [activeGroup, loadGroups]);
 
