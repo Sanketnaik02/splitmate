@@ -24,7 +24,11 @@ export default function ExpenseDetail() {
 
   const group = groups.find((g) => g.id === expense.group_id || g.id === expense.groupId) || null;
   const groupMembers = group ? (group.members || []) : [];
-  const paidByMember = groupMembers.find(m => m.id === expense.paid_by_member_id);
+
+  let paidByMember = groupMembers.find(m => m.id === expense.paid_by_member_id);
+  if (!paidByMember && expense.paidBy) {
+    paidByMember = groupMembers.find(m => m.userId === expense.paidBy);
+  }
 
   return (
     <AppLayout userName={user?.displayName || 'User'}>
@@ -82,6 +86,24 @@ export default function ExpenseDetail() {
                   <div key={s.id} className="flex justify-between text-sm">
                     <span className="text-gray-700 dark:text-gray-200">{isYou ? 'You' : (splitMember?.displayName || 'Unknown')}</span>
                     <span className="font-medium">{formatCurrency(s.share_amount)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
+
+        {expense.splitDetails && Object.keys(expense.splitDetails).length > 0 && (
+          <Card padding="p-4" className="mb-4">
+            <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-2">Split Details</p>
+            <div className="space-y-2">
+              {Object.entries(expense.splitDetails).map(([uid, share]) => {
+                const splitMember = groupMembers.find(m => m.userId === uid);
+                const isYou = uid === user?.id;
+                return (
+                  <div key={uid} className="flex justify-between text-sm">
+                    <span className="text-gray-700 dark:text-gray-200">{isYou ? 'You' : (splitMember?.displayName || 'Unknown')}</span>
+                    <span className="font-medium">{formatCurrency(share)}</span>
                   </div>
                 );
               })}

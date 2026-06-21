@@ -81,8 +81,11 @@ export function GroupProvider({ children }) {
         let gExpenses = [];
         try {
           gExpenses = await groupService.getGroupExpenses(g.id);
-        } catch { /* fall back to localStorage */ }
-        if (!gExpenses.length) gExpenses = store.where('expenses', 'groupId', g.id);
+        } catch (e) { console.error('[GroupContext] loadGroups getGroupExpenses error:', e?.message || e); }
+        if (!gExpenses.length) {
+          gExpenses = store.where('expenses', 'groupId', g.id);
+          if (gExpenses.length) console.log('[GroupContext] loadGroups fell back to localStorage for', g.id, 'count:', gExpenses.length);
+        }
         const enriched = enrich(g, gExpenses, gMembers);
         if (enriched) merged.push(enriched);
       }
@@ -129,8 +132,11 @@ export function GroupProvider({ children }) {
       let gExpenses = [];
       try {
         gExpenses = await groupService.getGroupExpenses(groupId);
-      } catch { /* fall back */ }
-      if (!gExpenses.length) gExpenses = store.where('expenses', 'groupId', groupId);
+      } catch (e) { console.error('[GroupContext] setActiveGroup getGroupExpenses error:', e?.message || e); }
+      if (!gExpenses.length) {
+        gExpenses = store.where('expenses', 'groupId', groupId);
+        if (gExpenses.length) console.log('[GroupContext] setActiveGroup fell back to localStorage for', groupId);
+      }
       setExpenses(gExpenses);
       setSettlements(store.where('settlements', 'groupId', groupId));
     } else {

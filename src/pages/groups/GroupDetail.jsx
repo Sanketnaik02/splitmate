@@ -132,6 +132,8 @@ export default function GroupDetail() {
     const memberExpenses = expenses.filter((e) => {
       if (e.paid_by_member_id === member.id) return true;
       if (e.splits?.some(s => s.member_id === member.id)) return true;
+      if (e.paidBy === userId) return true;
+      if (e.splitDetails && userId in e.splitDetails) return true;
       return false;
     });
     if (memberExpenses.length > 0) {
@@ -271,7 +273,10 @@ export default function GroupDetail() {
             ) : (
               <>
                 {expenses.map((exp) => {
-                  const payerMember = members.find(m => m.id === exp.paid_by_member_id);
+                  let payerMember = members.find(m => m.id === exp.paid_by_member_id);
+                  if (!payerMember && exp.paidBy) {
+                    payerMember = members.find(m => m.userId === exp.paidBy);
+                  }
                   return (
                     <div key={exp.id} className="relative group">
                       <ExpenseRow
