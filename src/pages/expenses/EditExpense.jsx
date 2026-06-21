@@ -11,27 +11,26 @@ import ValidationPopup from '../../components/ui/ValidationPopup';
 import { useGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
-import { store } from '../../utils/storage';
 import { calcEqualSplit, calcSharesSplit } from '../../utils/calculators';
 
 export default function EditExpense() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { groups, updateExpense } = useGroup();
+  const { groups, expenses, updateExpense } = useGroup();
   const { showToast } = useToast();
 
-  const original = store.get('expenses', id);
-  const group = groups.find((g) => g.id === original?.groupId);
+  const original = expenses.find(e => e.id === id);
+  const group = groups.find((g) => g.id === (original?.group_id || original?.groupId));
   const groupMembers = group ? (group.members || []) : [];
 
   const [description, setDescription] = useState(original?.description || '');
   const [amount, setAmount] = useState(original ? String(original.amount) : '');
   const [category, setCategory] = useState(original?.category || 'food');
-  const [paidBy, setPaidBy] = useState(original?.paidBy || user?.id || '');
-  const [splitType, setSplitType] = useState(original?.splitType || 'equal');
+  const [paidByMemberId, setPaidByMemberId] = useState(original?.paid_by_member_id || '');
+  const [splitType, setSplitType] = useState(original?.split_type || 'equal');
   const [splitAmong, setSplitAmong] = useState(
-    original?.splitDetails ? Object.keys(original.splitDetails) : groupMembers.map((m) => m.userId)
+    original?.splits ? original.splits.map(s => s.member_id) : groupMembers.map((m) => m.id)
   );
   const [validationPopup, setValidationPopup] = useState({ isOpen: false, title: '', message: '' });
 
@@ -51,7 +50,7 @@ export default function EditExpense() {
     setValidationPopup({ isOpen: false, title: '', message: '' });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const amt = parseFloat(amount);
     if (!description.trim()) {
@@ -72,29 +71,39 @@ export default function EditExpense() {
       splitDetails = calcEqualSplit(amt, splitAmong);
     } else if (splitType === 'shares') {
       const shares = {};
-      splitAmong.forEach((uid) => { shares[uid] = 1; });
+      splitAmong.forEach((mid) => { shares[mid] = 1; });
       splitDetails = calcSharesSplit(amt, shares);
     } else {
       const ratio = amt / original.amount;
       splitDetails = {};
-      (original.splitDetails ? Object.keys(original.splitDetails) : splitAmong).forEach((uid) => {
-        if (splitAmong.includes(uid)) {
-          splitDetails[uid] = Math.round((original.splitDetails?.[uid] || amt / splitAmong.length) * ratio * 100) / 100;
+      (original.splits ? original.splits.map(s => s.member_id) : splitAmong).forEach((mid) => {
+        if (splitAmong.includes(mid)) {
+          const origShare = original.splits?.find(s => s.member_id === mid)?.share_amount;
+          splitDetails[mid] = Math.round((origShare || amt / splitAmong.length) * ratio * 100) / 100;
         }
       });
     }
 
-    updateExpense(id, {
-      description: description.trim(),
-      amount: amt,
-      category,
-      paidBy,
-      splitType,
-      splitDetails,
-    });
+    const splits = Object.entries(splitDetails).map(([memberId, shareAmount]) => ({
+      member_id: memberId,
+      share_amount: shareAmount,
+    }));
 
-    showToast('Expense updated!', 'success');
-    navigate(`/expenses/${id}`);
+    try {
+      await updateExpense(id, {
+        description: description.trim(),
+        amount: amt,
+        category,
+        paid_by_member_id: paidByMemberId,
+        split_type: splitType,
+        splits,
+      });
+
+      showToast('Expense updated!', 'success');
+      navigate(`/expenses/${id}`);
+    } catch (err) {
+      showToast(err.message || 'Failed to update expense', 'error');
+    }
   };
 
   return (
@@ -117,12 +126,12 @@ export default function EditExpense() {
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Paid by</label>
             <select
-              value={paidBy}
-              onChange={(e) => setPaidBy(e.target.value)}
+              value={paidByMemberId}
+              onChange={(e) => setPaidByMemberId(e.target.value)}
               className="w-full px-4 py-2.5 text-sm bg-white dark:bg-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:border-primary-500"
             >
               {groupMembers.map((m) => (
-                <option key={m.userId} value={m.userId}>{m.userId === user?.id ? `You (${user.displayName})` : m.displayName}</option>
+                <option key={m.id} value={m.id}>{m.userId === user?.id ? `You (${user.displayName})` : m.displayName}</option>
               ))}
             </select>
           </div>

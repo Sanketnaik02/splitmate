@@ -1,10 +1,10 @@
 import Avatar from '../ui/Avatar';
 
 export default function MemberPicker({ members, selectedIds = [], onChange, label }) {
-  const toggle = (userId) => {
-    const next = selectedIds.includes(userId)
-      ? selectedIds.filter((id) => id !== userId)
-      : [...selectedIds, userId];
+  const toggle = (memberId) => {
+    const next = selectedIds.includes(memberId)
+      ? selectedIds.filter((id) => id !== memberId)
+      : [...selectedIds, memberId];
     onChange(next);
   };
 
@@ -13,12 +13,12 @@ export default function MemberPicker({ members, selectedIds = [], onChange, labe
       {label && <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">{label}</label>}
       <div className="space-y-1">
         {members.map((member) => {
-          const isSelected = selectedIds.includes(member.userId);
+          const isSelected = selectedIds.includes(member.id);
           return (
             <button
-              key={member.userId}
+              key={member.id}
               type="button"
-              onClick={() => toggle(member.userId)}
+              onClick={() => toggle(member.id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
                 isSelected ? 'border-primary-500 bg-primary-50' : 'border-gray-100 dark:border-gray-700 hover:bg-gray-50'
               }`}

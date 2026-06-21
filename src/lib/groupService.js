@@ -153,4 +153,149 @@ export const groupService = {
 
     if (error) throw error;
   },
+
+  // ──────────────────────────────────────────────
+  // Expense CRUD
+  // ──────────────────────────────────────────────
+
+  async createExpense(groupId, data, userId) {
+    const { data: expense, error } = await supabase
+      .from('expenses')
+      .insert({
+        group_id: groupId,
+        description: data.description,
+        category: data.category,
+        amount: data.amount,
+        paid_by_member_id: data.paid_by_member_id,
+        created_by: userId,
+        split_type: data.split_type || 'equal',
+        date: data.date || new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const splitRows = data.splits.map(s => ({
+      expense_id: expense.id,
+      member_id: s.member_id,
+      share_amount: s.share_amount,
+    }));
+
+    const { error: splitsError } = await supabase
+      .from('expense_splits')
+      .insert(splitRows);
+
+    if (splitsError) {
+      await supabase.from('expenses').delete().eq('id', expense.id);
+      throw splitsError;
+    }
+
+    const { data: splits } = await supabase
+      .from('expense_splits')
+      .select('*')
+      .eq('expense_id', expense.id);
+
+    return { ...expense, splits: splits || [] };
+  },
+
+  async getGroupExpenses(groupId) {
+    const { data: expenses, error } = await supabase
+      .from('expenses')
+      .select('*')
+      .eq('group_id', groupId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!expenses || expenses.length === 0) return [];
+
+    const expenseIds = expenses.map(e => e.id);
+
+    const { data: splits, error: splitsError } = await supabase
+      .from('expense_splits')
+      .select('*')
+      .in('expense_id', expenseIds);
+
+    if (splitsError) throw splitsError;
+
+    const splitMap = {};
+    (splits || []).forEach(s => {
+      if (!splitMap[s.expense_id]) splitMap[s.expense_id] = [];
+      splitMap[s.expense_id].push(s);
+    });
+
+    return expenses.map(e => ({
+      ...e,
+      splits: splitMap[e.id] || [],
+    }));
+  },
+
+  async getExpenseById(id) {
+    const { data: expense, error } = await supabase
+      .from('expenses')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!expense) return null;
+
+    const { data: splits, error: splitsError } = await supabase
+      .from('expense_splits')
+      .select('*')
+      .eq('expense_id', id);
+
+    if (splitsError) throw splitsError;
+
+    return { ...expense, splits: splits || [] };
+  },
+
+  async updateExpense(id, data) {
+    const { error } = await supabase
+      .from('expenses')
+      .update({
+        description: data.description,
+        category: data.category,
+        amount: data.amount,
+        paid_by_member_id: data.paid_by_member_id,
+        split_type: data.split_type,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    if (data.splits) {
+      const { error: deleteError } = await supabase
+        .from('expense_splits')
+        .delete()
+        .eq('expense_id', id);
+
+      if (deleteError) throw deleteError;
+
+      const splitRows = data.splits.map(s => ({
+        expense_id: id,
+        member_id: s.member_id,
+        share_amount: s.share_amount,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('expense_splits')
+        .insert(splitRows);
+
+      if (insertError) throw insertError;
+    }
+
+    return this.getExpenseById(id);
+  },
+
+  async deleteExpense(id) {
+    const { error } = await supabase
+      .from('expenses')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
 };

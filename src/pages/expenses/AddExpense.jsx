@@ -28,9 +28,10 @@ export default function AddExpense() {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('food');
-  const [paidBy, setPaidBy] = useState(user?.id || '');
+  const currentUserMemberId = groupMembers.find(m => m.userId === user?.id)?.id || '';
+  const [paidByMemberId, setPaidByMemberId] = useState(currentUserMemberId);
   const [splitType, setSplitType] = useState('equal');
-  const [splitAmong, setSplitAmong] = useState(groupMembers.map((m) => m.userId));
+  const [splitAmong, setSplitAmong] = useState(groupMembers.map((m) => m.id));
   const [errors, setErrors] = useState({});
   const [validationPopup, setValidationPopup] = useState({ isOpen: false, title: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
@@ -56,12 +57,12 @@ export default function AddExpense() {
       return false;
     }
     if (splitAmong.length === 0) errs.splitAmong = 'Select at least one person';
-    if (!paidBy) errs.paidBy = 'Select who paid';
+    if (!paidByMemberId) errs.paidByMemberId = 'Select who paid';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate() || !groupId) return;
     setSubmitting(true);
@@ -73,26 +74,36 @@ export default function AddExpense() {
       splitDetails = calcEqualSplit(amt, splitAmong);
     } else if (splitType === 'shares') {
       const shares = {};
-      splitAmong.forEach((uid) => { shares[uid] = 1; });
+      splitAmong.forEach((mid) => { shares[mid] = 1; });
       splitDetails = calcSharesSplit(amt, shares);
     } else {
       splitDetails = {};
-      splitAmong.forEach((uid) => { splitDetails[uid] = amt / splitAmong.length; });
+      splitAmong.forEach((mid) => { splitDetails[mid] = amt / splitAmong.length; });
     }
 
-    addExpense(groupId, {
-      description: description.trim(),
-      category,
-      amount: amt,
-      paidBy,
-      date: new Date().toISOString(),
-      splitType,
-      splitDetails,
-    });
+    const splits = Object.entries(splitDetails).map(([memberId, shareAmount]) => ({
+      member_id: memberId,
+      share_amount: shareAmount,
+    }));
 
-    showToast('Expense added!', 'success');
-    setSubmitting(false);
-    navigate(`/groups/${groupId}`);
+    try {
+      await addExpense(groupId, {
+        description: description.trim(),
+        category,
+        amount: amt,
+        paid_by_member_id: paidByMemberId,
+        date: new Date().toISOString(),
+        split_type: splitType,
+        splits,
+      });
+
+      showToast('Expense added!', 'success');
+      navigate(`/groups/${groupId}`);
+    } catch (err) {
+      showToast(err.message || 'Failed to add expense', 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -115,18 +126,18 @@ export default function AddExpense() {
           <Input label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What's this for?" icon="📝" error={errors.description} />
           <CategoryPicker value={category} onChange={setCategory} />
 
-          <div className="space-y-1">
+            <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Paid by</label>
             <select
-              value={paidBy}
-              onChange={(e) => setPaidBy(e.target.value)}
+              value={paidByMemberId}
+              onChange={(e) => setPaidByMemberId(e.target.value)}
               className="w-full px-4 py-2.5 text-sm bg-white dark:bg-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:border-primary-500"
             >
               {groupMembers.map((m) => (
-                <option key={m.userId} value={m.userId}>{m.userId === user?.id ? `You (${user.displayName})` : m.displayName}</option>
+                <option key={m.id} value={m.id}>{m.userId === user?.id ? `You (${user.displayName})` : m.displayName}</option>
               ))}
             </select>
-            {errors.paidBy && <p className="text-xs text-red-500">{errors.paidBy}</p>}
+            {errors.paidByMemberId && <p className="text-xs text-red-500">{errors.paidByMemberId}</p>}
           </div>
 
           <SplitTypeSelector value={splitType} onChange={setSplitType} />

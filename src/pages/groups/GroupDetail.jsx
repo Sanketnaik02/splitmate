@@ -130,8 +130,8 @@ export default function GroupDetail() {
     const member = members.find((m) => m.userId === userId);
     if (!member) return;
     const memberExpenses = expenses.filter((e) => {
-      if (e.paidBy === userId) return true;
-      if (e.splitDetails && userId in e.splitDetails) return true;
+      if (e.paid_by_member_id === member.id) return true;
+      if (e.splits?.some(s => s.member_id === member.id)) return true;
       return false;
     });
     if (memberExpenses.length > 0) {
@@ -270,24 +270,27 @@ export default function GroupDetail() {
               </div>
             ) : (
               <>
-                {expenses.map((exp) => (
-                  <div key={exp.id} className="relative group">
-                    <ExpenseRow
-                      expense={{
-                        ...exp,
-                        paidByName: getDisplayName(exp.paidBy, members),
-                      }}
-                      onClick={() => navigate(`/expenses/${exp.id}`)}
-                    />
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeleteExpense(exp.id); }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-red-50 text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
-                      title="Delete"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
+                {expenses.map((exp) => {
+                  const payerMember = members.find(m => m.id === exp.paid_by_member_id);
+                  return (
+                    <div key={exp.id} className="relative group">
+                      <ExpenseRow
+                        expense={{
+                          ...exp,
+                          paidByName: payerMember?.displayName || 'Unknown',
+                        }}
+                        onClick={() => navigate(`/expenses/${exp.id}`)}
+                      />
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteExpense(exp.id); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-red-50 text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                        title="Delete"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  );
+                })}
                 <div className="p-3">
                   <Button size="sm" variant="secondary" fullWidth onClick={() => navigate(`/expenses/new?group=${groupId}`)}>
                     + Add Expense

@@ -42,11 +42,22 @@ export function computeGroupBalances(members, expenses, settlements) {
   members.forEach((m) => { balances[m.userId] = 0; });
 
   expenses.forEach((exp) => {
-    if (balances[exp.paidBy] !== undefined) balances[exp.paidBy] += exp.amount;
-    if (exp.splitDetails) {
-      Object.entries(exp.splitDetails).forEach(([uid, share]) => {
-        if (balances[uid] !== undefined) balances[uid] -= share;
+    if (exp.paid_by_member_id !== undefined && exp.splits) {
+      const payerMember = members.find(m => m.id === exp.paid_by_member_id);
+      if (payerMember && balances[payerMember.userId] !== undefined)
+        balances[payerMember.userId] += Number(exp.amount);
+      (exp.splits || []).forEach((s) => {
+        const splitMember = members.find(m => m.id === s.member_id);
+        if (splitMember && balances[splitMember.userId] !== undefined)
+          balances[splitMember.userId] -= Number(s.share_amount);
       });
+    } else {
+      if (balances[exp.paidBy] !== undefined) balances[exp.paidBy] += exp.amount;
+      if (exp.splitDetails) {
+        Object.entries(exp.splitDetails).forEach(([uid, share]) => {
+          if (balances[uid] !== undefined) balances[uid] -= share;
+        });
+      }
     }
   });
 
@@ -96,15 +107,20 @@ export function computeUserOverallBalance(userId, groups, allExpenses, allSettle
 
   groups.forEach((g) => {
     const members = g.members || [];
-    const groupExpenses = allExpenses.filter((e) => e.groupId === g.id);
+    const groupExpenses = allExpenses.filter((e) => (e.group_id || e.groupId) === g.id);
     const groupSettlements = allSettlements.filter((s) => s.groupId === g.id);
     const balances = computeGroupBalances(members, groupExpenses, groupSettlements);
     const bal = balances[userId] || 0;
     if (bal > 0) totalOwed += bal;
     else totalOwes += Math.abs(bal);
     groupExpenses.forEach((e) => {
-      totalExpenses += e.amount;
-      if (e.paidBy === userId) totalPaid += e.amount;
+      totalExpenses += Number(e.amount);
+      if (e.paid_by_member_id !== undefined) {
+        const payerMember = members.find(m => m.id === e.paid_by_member_id);
+        if (payerMember?.userId === userId) totalPaid += Number(e.amount);
+      } else if (e.paidBy === userId) {
+        totalPaid += Number(e.amount);
+      }
     });
   });
 

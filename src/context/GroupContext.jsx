@@ -35,23 +35,31 @@ export function GroupProvider({ children }) {
       const seen = new Set();
       const merged = [];
 
-      const enrich = (g) => {
+      const enrich = (g, gExpenses, gMembers) => {
         if (seen.has(g.id)) return null;
         seen.add(g.id);
 
-        const gId = g.id;
-        const gMembers = (g.members || []).map(normalizeMember);
-        const gExpenses = store.where('expenses', 'groupId', gId);
-        const gSettlements = store.where('settlements', 'groupId', gId);
+        const gSettlements = store.where('settlements', 'groupId', g.id);
 
         const balances = {};
         gMembers.forEach(m => { balances[m.userId] = 0; });
         gExpenses.forEach(e => {
-          if (balances[e.paidBy] !== undefined) balances[e.paidBy] += e.amount;
-          if (e.splitDetails) {
-            Object.entries(e.splitDetails).forEach(([uid, share]) => {
-              if (balances[uid] !== undefined) balances[uid] -= share;
+          if (e.paid_by_member_id !== undefined && e.splits) {
+            const payerMember = gMembers.find(m => m.id === e.paid_by_member_id);
+            if (payerMember && balances[payerMember.userId] !== undefined)
+              balances[payerMember.userId] += Number(e.amount);
+            (e.splits || []).forEach(s => {
+              const splitMember = gMembers.find(m => m.id === s.member_id);
+              if (splitMember && balances[splitMember.userId] !== undefined)
+                balances[splitMember.userId] -= Number(s.share_amount);
             });
+          } else {
+            if (balances[e.paidBy] !== undefined) balances[e.paidBy] += e.amount;
+            if (e.splitDetails) {
+              Object.entries(e.splitDetails).forEach(([uid, share]) => {
+                if (balances[uid] !== undefined) balances[uid] -= share;
+              });
+            }
           }
         });
         gSettlements.filter(s => s.status === 'completed').forEach(s => {
@@ -70,13 +78,19 @@ export function GroupProvider({ children }) {
 
       for (const g of supabaseGroups) {
         const gMembers = (await groupService.getGroupMembers(g.id)).map(normalizeMember);
-        const enriched = enrich({ ...g, members: gMembers });
+        let gExpenses = [];
+        try {
+          gExpenses = await groupService.getGroupExpenses(g.id);
+        } catch { /* fall back to localStorage */ }
+        if (!gExpenses.length) gExpenses = store.where('expenses', 'groupId', g.id);
+        const enriched = enrich(g, gExpenses, gMembers);
         if (enriched) merged.push(enriched);
       }
 
       for (const g of localGroups) {
         const gMembers = store.where('members', 'groupId', g.id).map(normalizeMember);
-        const enriched = enrich({ ...g, members: gMembers });
+        const gExpenses = store.where('expenses', 'groupId', g.id);
+        const enriched = enrich(g, gExpenses, gMembers);
         if (enriched) merged.push(enriched);
       }
 
@@ -112,7 +126,12 @@ export function GroupProvider({ children }) {
         }
       }
       setMembers(gMembers);
-      setExpenses(store.where('expenses', 'groupId', groupId));
+      let gExpenses = [];
+      try {
+        gExpenses = await groupService.getGroupExpenses(groupId);
+      } catch { /* fall back */ }
+      if (!gExpenses.length) gExpenses = store.where('expenses', 'groupId', groupId);
+      setExpenses(gExpenses);
       setSettlements(store.where('settlements', 'groupId', groupId));
     } else {
       setMembers([]);
@@ -192,26 +211,27 @@ export function GroupProvider({ children }) {
     await loadGroups();
   }, [activeGroup, loadGroups]);
 
-  const addExpense = useCallback((groupId, expenseData) => {
-    const exp = store.add('expenses', { ...expenseData, groupId });
+  const addExpense = useCallback(async (groupId, expenseData) => {
+    if (!user) throw new Error('Not authenticated');
+    const exp = await groupService.createExpense(groupId, expenseData, user.id);
     if (activeGroup?.id === groupId) setExpenses(prev => [...prev, exp]);
-    loadGroups();
+    await loadGroups();
     return exp;
-  }, [activeGroup, loadGroups]);
+  }, [activeGroup, loadGroups, user]);
 
-  const updateExpense = useCallback((expenseId, updates) => {
-    const updated = store.update('expenses', expenseId, updates);
+  const updateExpense = useCallback(async (expenseId, updates) => {
+    const updated = await groupService.updateExpense(expenseId, updates);
     if (updated && activeGroup) {
       setExpenses(prev => prev.map(e => e.id === expenseId ? { ...e, ...updated } : e));
     }
-    loadGroups();
+    await loadGroups();
     return updated;
   }, [activeGroup, loadGroups]);
 
-  const deleteExpense = useCallback((expenseId) => {
-    store.remove('expenses', expenseId);
+  const deleteExpense = useCallback(async (expenseId) => {
+    await groupService.deleteExpense(expenseId);
     if (activeGroup) setExpenses(prev => prev.filter(e => e.id !== expenseId));
-    loadGroups();
+    await loadGroups();
   }, [activeGroup, loadGroups]);
 
   const addSettlement = useCallback((groupId, settlementData) => {

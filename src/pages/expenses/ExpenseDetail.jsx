@@ -5,16 +5,14 @@ import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import { useAuth } from '../../context/AuthContext';
 import { useGroup } from '../../context/GroupContext';
-import { store } from '../../utils/storage';
 import { formatCurrency } from '../../utils/currency';
-import { getDisplayName } from '../../utils/displayName';
 
 export default function ExpenseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { groups } = useGroup();
-  const expense = store.get('expenses', id);
+  const { groups, expenses } = useGroup();
+  const expense = expenses.find(e => e.id === id || e.group_id === id);
 
   if (!expense) {
     return (
@@ -24,8 +22,9 @@ export default function ExpenseDetail() {
     );
   }
 
-  const group = groups.find((g) => g.id === expense.groupId) || null;
+  const group = groups.find((g) => g.id === expense.group_id || g.id === expense.groupId) || null;
   const groupMembers = group ? (group.members || []) : [];
+  const paidByMember = groupMembers.find(m => m.id === expense.paid_by_member_id);
 
   return (
     <AppLayout userName={user?.displayName || 'User'}>
@@ -48,7 +47,7 @@ export default function ExpenseDetail() {
           <p className="text-lg font-medium text-gray-700 dark:text-gray-200 mt-1">{expense.description}</p>
           <div className="flex items-center justify-center gap-2 mt-3">
             <Badge variant="primary">{expense.category}</Badge>
-            <Badge variant="default">{expense.splitType}</Badge>
+            <Badge variant="default">{expense.split_type || expense.splitType}</Badge>
           </div>
         </Card>
 
@@ -57,7 +56,7 @@ export default function ExpenseDetail() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-300">Paid by</span>
-              <span className="font-medium">{getDisplayName(expense.paidBy, groupMembers)}</span>
+              <span className="font-medium">{paidByMember?.displayName || 'Unknown'}</span>
             </div>
             {group && (
               <div className="flex justify-between">
@@ -67,20 +66,22 @@ export default function ExpenseDetail() {
             )}
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-300">Date</span>
-              <span className="font-medium">{new Date(expense.date || expense.createdAt).toLocaleDateString()}</span>
+              <span className="font-medium">{new Date(expense.date || expense.created_at).toLocaleDateString()}</span>
             </div>
           </div>
         </Card>
 
-        {expense.splitDetails && Object.keys(expense.splitDetails).length > 0 && (
+        {expense.splits && expense.splits.length > 0 && (
           <Card padding="p-4" className="mb-4">
             <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-2">Split Details</p>
             <div className="space-y-2">
-              {Object.entries(expense.splitDetails).map(([uid, share]) => {
+              {expense.splits.map((s) => {
+                const splitMember = groupMembers.find(m => m.id === s.member_id);
+                const isYou = splitMember?.userId === user?.id;
                 return (
-                  <div key={uid} className="flex justify-between text-sm">
-                    <span className="text-gray-700 dark:text-gray-200">{uid === user?.id ? 'You' : getDisplayName(uid, groupMembers)}</span>
-                    <span className="font-medium">{formatCurrency(share)}</span>
+                  <div key={s.id} className="flex justify-between text-sm">
+                    <span className="text-gray-700 dark:text-gray-200">{isYou ? 'You' : (splitMember?.displayName || 'Unknown')}</span>
+                    <span className="font-medium">{formatCurrency(s.share_amount)}</span>
                   </div>
                 );
               })}

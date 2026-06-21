@@ -12,8 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useGroup } from '../../context/GroupContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { computeUserOverallBalance } from '../../utils/calculators';
-import { store } from '../../utils/storage';
-import { getDisplayName } from '../../utils/displayName';
+import { groupService } from '../../lib/groupService';
 
 function BalanceSkeleton() {
   return (
@@ -53,14 +52,33 @@ export default function Dashboard() {
   console.log('[Dashboard] user:', user?.id, 'groups:', groups?.length);
 
   const { plan, groupCount, remaining } = useSubscription();
-  let allExpenses = [];
-  let allSettlements = [];
-  try {
-    allExpenses = store.getAll('expenses');
-    allSettlements = store.getAll('settlements');
-  } catch (err) {
-    console.error('[Dashboard] store.getAll error:', err);
-  }
+  const [allExpenses, setAllExpenses] = React.useState([]);
+  const allSettlements = React.useMemo(() => {
+    try { return JSON.parse(localStorage.getItem('splitmate_settlements') || '[]'); }
+    catch { return []; }
+  }, []);
+
+  React.useEffect(() => {
+    if (!user || !groups.length) { setAllExpenses([]); return; }
+    let cancelled = false;
+    (async () => {
+      const results = [];
+      for (const g of groups) {
+        try {
+          const exps = await groupService.getGroupExpenses(g.id);
+          results.push(...exps);
+        } catch { /* fall back to localStorage */ }
+      }
+      if (!results.length) {
+        try {
+          const local = JSON.parse(localStorage.getItem('splitmate_expenses') || '[]');
+          results.push(...local);
+        } catch { /* ignore */ }
+      }
+      if (!cancelled) setAllExpenses(results);
+    })();
+    return () => { cancelled = true; };
+  }, [user, groups]);
 
   const balance = React.useMemo(() => {
     try {
@@ -83,21 +101,40 @@ export default function Dashboard() {
       const items = [];
 
       allExpenses
-        .filter((e) => gIds.includes(e.groupId))
+        .filter((e) => (e.group_id || e.groupId) && gIds.includes(e.group_id || e.groupId))
         .forEach((e) => {
-          const group = groups.find((g) => g.id === e.groupId);
-          const share = e.splitDetails?.[user.id] || 0;
+          const group = groups.find((g) => g.id === (e.group_id || e.groupId));
+          const members = group?.members || [];
+          let share = 0;
+          let isPaidByUser = false;
+          let payerName = 'Unknown';
+
+          if (e.paid_by_member_id !== undefined) {
+            const myMember = members.find(m => m.userId === user.id);
+            const mySplit = (e.splits || []).find(s => s.member_id === myMember?.id);
+            share = mySplit?.share_amount || 0;
+            isPaidByUser = e.paid_by_member_id === myMember?.id;
+            const payerMember = members.find(m => m.id === e.paid_by_member_id);
+            payerName = payerMember?.displayName || 'Unknown';
+          } else {
+            share = e.splitDetails?.[user.id] || 0;
+            isPaidByUser = e.paidBy === user.id;
+            payerName = members.find(m => m.userId === e.paidBy)?.displayName
+              || JSON.parse(localStorage.getItem('splitmate_users') || '{}')[e.paidBy]?.displayName
+              || 'Unknown';
+          }
+
           items.push({
             id: e.id,
             description: e.description,
             category: e.category,
             amount: share,
-            paidBy: e.paidBy,
-            paidByName: getDisplayName(e.paidBy, group?.members || []),
+            paidBy: e.paid_by_member_id || e.paidBy,
+            paidByName: payerName,
             groupName: group?.name || '',
             userShare: share,
-            type: e.paidBy === user.id ? 'owed' : 'owe',
-            date: new Date(e.date || e.createdAt),
+            type: isPaidByUser ? 'owed' : 'owe',
+            date: new Date(e.date || e.created_at || e.createdAt),
           });
         });
 
@@ -105,7 +142,10 @@ export default function Dashboard() {
         .filter((s) => gIds.includes(s.groupId) && (s.fromUserId === user.id || s.toUserId === user.id))
         .forEach((s) => {
           const group = groups.find((g) => g.id === s.groupId);
-          const settledName = getDisplayName(s.fromUserId, group?.members || []);
+          const members = group?.members || [];
+          const settledName = members.find(m => m.userId === s.fromUserId)?.displayName
+            || JSON.parse(localStorage.getItem('splitmate_users') || '{}')[s.fromUserId]?.displayName
+            || 'Unknown';
           items.push({
             id: s.id,
             description: `Settled with ${settledName}`,
