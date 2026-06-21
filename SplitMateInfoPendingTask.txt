@@ -1,0 +1,40 @@
+PENDING CRITICAL TASKS
+
+1. Replace simulated payment flow
+Current:
+subscriptionService.processPayment()
+
+Issue:
+Uses Math.random() fake payment success.
+
+Required:
+Razorpay integration with webhook verification.
+
+Priority:
+HIGH
+
+---------------------------------
+
+2. Prevent direct plan upgrades
+
+Current:
+upgradePlan() can update subscriptions without verified payment.
+
+Required:
+Only allow plan upgrades after successful Razorpay payment.
+
+Priority:
+HIGH
+
+---------------------------------
+
+Future Roadmap
+
+Phase 5:
+Admin Dashboard
+
+Phase 6:
+Razorpay Integration
+
+Phase 7:
+Expo Mobile Conversion

@@ -26,6 +26,12 @@ export const GROUP_CATEGORIES = [
   { id: 'other', label: 'Other', icon: '📋' },
 ];
 
+export const FOUNDER_EMAIL = 'splitmate02@gmail.com';
+
+export const ADMIN_EMAILS = [
+  FOUNDER_EMAIL,
+];
+
 export const DEFAULT_CURRENCY = 'INR';
 export const CURRENCY_SYMBOL = '₹';
 

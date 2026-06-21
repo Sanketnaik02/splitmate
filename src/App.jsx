@@ -1,10 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { GroupProvider } from './context/GroupContext';
 import { ToastProvider } from './components/ui/Toast';
 import { ThemeProvider } from './context/ThemeContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import ProtectedRoute from './components/navigation/ProtectedRoute';
+import { isAdmin } from './utils/admin';
 
 import SignIn from './pages/auth/SignIn';
 import SignUp from './pages/auth/SignUp';
@@ -24,8 +25,15 @@ import Profile from './pages/profile/Profile';
 import EditProfile from './pages/profile/EditProfile';
 import ProfileCompletion from './pages/profile/ProfileCompletion';
 import Notifications from './pages/notifications/Notifications';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import ApplicationGuide from './pages/guide/ApplicationGuide';
 import NotFound from './pages/NotFound';
+
+function RequireAdmin({ children }) {
+  const { user } = useAuth();
+  if (!isAdmin(user?.email)) return <Navigate to="/dashboard" replace />;
+  return children;
+}
 
 export default function App() {
   return (
@@ -56,6 +64,7 @@ export default function App() {
               <Route path="/complete-profile" element={<ProfileCompletion />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/guide" element={<ApplicationGuide />} />
+              <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
             </Route>
 
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
