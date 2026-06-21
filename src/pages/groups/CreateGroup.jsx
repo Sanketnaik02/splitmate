@@ -5,7 +5,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Select from '../../components/form/Select';
 import Card from '../../components/ui/Card';
-import Modal from '../../components/ui/Modal';
+import UpgradeModal from '../../components/subscription/UpgradeModal';
 import { GROUP_CATEGORIES } from '../../config/constants';
 import { validateGroupName } from '../../utils/validators';
 import { useGroup } from '../../context/GroupContext';
@@ -18,25 +18,24 @@ export default function CreateGroup() {
   const { user } = useAuth();
   const { createGroup } = useGroup();
   const { showToast } = useToast();
-  const { plan, planId, groupCount, atLimit } = useSubscription();
+  const { plan, planTier, createdGroupCount, canCreateGroup, remainingGroups } = useSubscription();
   const [name, setName] = useState('');
   const [category, setCategory] = useState('other');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
-  const [showLimitPopup, setShowLimitPopup] = useState(false);
-  const [showLastWarning, setShowLastWarning] = useState(false);
-
-  const isLastFreeGroup = planId === 'free' && groupCount === 4;
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const doCreateGroup = async () => {
     try {
-      console.log('[CreateGroup] Calling createGroup...');
       const newGroup = await createGroup({ name: name.trim(), category, description });
-      console.log('[CreateGroup] createGroup SUCCESS:', JSON.stringify(newGroup));
       showToast('Group created! Add members to start splitting.', 'success');
       navigate(`/groups/${newGroup.id}`);
     } catch (err) {
-      console.error('[CreateGroup] createGroup ERROR:', err.message, JSON.stringify(err));
+      const hint = err.hint || err.message || '';
+      if (hint.includes('upgrade_required')) {
+        setShowUpgradeModal(true);
+        return;
+      }
       showToast('Failed to create group: ' + err.message, 'error');
     }
   };
@@ -46,12 +45,8 @@ export default function CreateGroup() {
     setError('');
     const nameErr = validateGroupName(name);
     if (nameErr) { setError(nameErr); return; }
-    if (atLimit) {
-      setShowLimitPopup(true);
-      return;
-    }
-    if (isLastFreeGroup) {
-      setShowLastWarning(true);
+    if (!canCreateGroup) {
+      setShowUpgradeModal(true);
       return;
     }
     doCreateGroup();
@@ -69,15 +64,21 @@ export default function CreateGroup() {
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Create Group</h1>
         </div>
 
-        <Card padding="p-3" className={`mb-4 flex items-center justify-between ${isLastFreeGroup ? 'border-amber-200 ring-1 ring-amber-200 dark:border-amber-700 dark:ring-amber-700' : ''}`}>
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-gray-600 dark:text-gray-300">Your Plan: <span className="font-semibold text-gray-700 dark:text-gray-200">{plan.icon} {plan.name}</span></p>
-              {isLastFreeGroup && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">1 left</span>}
+        <Card padding="p-3" className="mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-gray-600 dark:text-gray-300">Your Plan: <span className="font-semibold text-gray-700 dark:text-gray-200">{plan.icon} {plan.name}</span></p>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">
+                Groups created: {createdGroupCount}
+                {plan.maxGroups === -1
+                  ? ' / Unlimited'
+                  : ` / ${plan.maxGroups}`}
+              </p>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">Groups: {groupCount} / {plan.maxGroups}</p>
+            <Button size="sm" variant="ghost" onClick={() => navigate('/subscription')}>Upgrade</Button>
           </div>
-          <Button size="sm" variant="ghost" onClick={() => navigate('/subscription')}>Upgrade</Button>
         </Card>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -87,45 +88,14 @@ export default function CreateGroup() {
             options={GROUP_CATEGORIES.map((c) => ({ value: c.id, label: `${c.icon}  ${c.label}` }))} />
           <Input label="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A short note" />
           <div className="pt-4 space-y-3">
-            <Button type="submit" fullWidth disabled={atLimit && groupCount >= plan.maxGroups}>Create Group</Button>
+            <Button type="submit" fullWidth disabled={!canCreateGroup && createdGroupCount >= plan.maxGroups && plan.maxGroups !== -1}>
+              {canCreateGroup ? 'Create Group' : 'Upgrade to Create'}
+            </Button>
             <Button type="button" variant="secondary" fullWidth onClick={() => navigate(-1)}>Cancel</Button>
           </div>
         </form>
 
-        <Modal isOpen={showLastWarning} onClose={() => setShowLastWarning(false)}
-          title="⚠️ Last Free Group"
-          footer={
-            <>
-              <Button variant="secondary" size="sm" onClick={() => { setShowLastWarning(false); navigate('/subscription'); }}>View Plans</Button>
-              <Button size="sm" onClick={() => { setShowLastWarning(false); doCreateGroup(); }}>Continue Creating Group</Button>
-            </>
-          }
-        >
-          <div className="space-y-3">
-            <p className="text-sm text-gray-700 dark:text-gray-200">You are about to use your final available group under the <strong>Free Plan</strong>.</p>
-            <p className="text-sm text-gray-700 dark:text-gray-200">After this group, you will need to upgrade to continue creating new groups.</p>
-            <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
-              <p className="text-xs text-amber-800 font-medium">Our plans start from only ₹20.</p>
-            </div>
-          </div>
-        </Modal>
-
-        <Modal isOpen={showLimitPopup} onClose={() => setShowLimitPopup(false)}
-          title="Group Limit Reached"
-          footer={
-            <>
-              <Button variant="secondary" size="sm" onClick={() => setShowLimitPopup(false)}>Cancel</Button>
-              <Button size="sm" onClick={() => { setShowLimitPopup(false); navigate('/subscription'); }}>View Plans</Button>
-            </>
-          }
-        >
-          <div className="space-y-3">
-            <p className="text-sm text-gray-700 dark:text-gray-200">
-              You have reached your <strong>{plan.name}</strong> plan limit of <strong>{plan.maxGroups} groups</strong>.
-            </p>
-            <p className="text-sm text-gray-700 dark:text-gray-200">Upgrade your plan to create additional groups.</p>
-          </div>
-        </Modal>
+        <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
       </div>
     </AppLayout>
   );

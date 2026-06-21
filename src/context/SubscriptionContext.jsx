@@ -1,77 +1,106 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { store } from '../utils/storage';
-import { groupService } from '../lib/groupService';
+import { subscriptionService } from '../lib/subscriptionService';
 import { SUBSCRIPTION_PLANS } from '../config/constants';
 
 const SubscriptionContext = createContext();
 
-function getPlanId(user) {
-  if (!user) return 'free';
-  const subs = store.where('subscriptions', 'userId', user.id);
-  return subs.length > 0 ? subs[0].planId : 'free';
-}
-
-function getInitialGroupCount(user) {
-  if (!user) return 0;
-  const all = store.getAll('groups');
-  const memberEntries = store.where('members', 'userId', user.id);
-  const groupIds = [...new Set(memberEntries.map(m => m.groupId))];
-  return all.filter(g => groupIds.includes(g.id)).length;
-}
-
 export function SubscriptionProvider({ children }) {
   const { user } = useAuth();
-  const [planId, setPlanId] = useState(() => getPlanId(user));
-  const [groupCount, setGroupCount] = useState(() => getInitialGroupCount(user));
+  const [plan, setPlan] = useState(() => SUBSCRIPTION_PLANS[0]);
+  const [createdGroupCount, setCreatedGroupCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState(false);
+
+  const refresh = useCallback(async (userId) => {
+    if (!userId) {
+      setPlan(SUBSCRIPTION_PLANS[0]);
+      setCreatedGroupCount(0);
+      setLoading(false);
+      return;
+    }
+    try {
+      const [planData, count] = await Promise.all([
+        subscriptionService.getUserPlan(userId),
+        subscriptionService.getCreatedGroupCount(userId),
+      ]);
+      if (planData) {
+        setPlan({
+          id: planData.plan_id,
+          name: planData.plan_name,
+          icon: planData.plan_icon,
+          maxGroups: planData.max_groups,
+          pricePaise: planData.price_paise,
+          features: planData.features || [],
+          popular: planData.is_popular,
+        });
+      }
+      setCreatedGroupCount(count);
+    } catch {
+      setPlan(SUBSCRIPTION_PLANS[0]);
+      setCreatedGroupCount(0);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (!user) { setGroupCount(0); return; }
+    setLoading(true);
+    refresh(user?.id);
+  }, [user, refresh]);
 
-    let cancelled = false;
+  const planTier = plan?.id || 'free';
+  const canCreateGroup = plan?.maxGroups === -1 || createdGroupCount < (plan?.maxGroups || 0);
+  const remainingGroups = plan?.maxGroups === -1 ? Infinity : Math.max(0, (plan?.maxGroups || 0) - createdGroupCount);
 
-    const fetchCount = async () => {
-      try {
-        const supabaseGroups = await groupService.getUserGroups(user.id);
+  const upgrade = useCallback(async (newPlanId) => {
+    if (!user) throw new Error('Not authenticated');
+    setUpgrading(true);
+    try {
+      const targetPlan = SUBSCRIPTION_PLANS.find(p => p.id === newPlanId);
+      if (!targetPlan) throw new Error('Invalid plan');
 
-        const localMemberEntries = store.where('members', 'userId', user.id);
-        const localGroupIds = [...new Set(localMemberEntries.map(m => m.groupId))];
-        const localGroups = store.getAll('groups').filter(g => localGroupIds.includes(g.id));
-
-        const seen = new Set();
-        supabaseGroups.forEach(g => seen.add(g.id));
-        localGroups.forEach(g => {
-          if (!seen.has(g.id)) seen.add(g.id);
+      if (newPlanId === 'free') {
+        await subscriptionService.upgradePlan(user.id, 'free', null);
+      } else {
+        const amountPaise = targetPlan.price * 100;
+        const payment = await subscriptionService.createPayment({
+          userId: user.id,
+          planId: newPlanId,
+          amountPaise,
         });
 
-        if (!cancelled) setGroupCount(seen.size);
-      } catch {
-        if (!cancelled) setGroupCount(0);
+        const result = await subscriptionService.processPayment({
+          planId: newPlanId,
+          amountPaise,
+        });
+
+        await subscriptionService.updatePaymentStatus(payment.id, result.status, result.gateway_ref);
+
+        if (result.status !== 'completed') {
+          throw new Error('Payment was not completed');
+        }
+
+        await subscriptionService.upgradePlan(user.id, newPlanId, payment.id);
       }
-    };
 
-    fetchCount();
-
-    return () => { cancelled = true; };
-  }, [user]);
-
-  const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId) || SUBSCRIPTION_PLANS[0];
-  const remaining = plan.maxGroups - groupCount;
-  const atLimit = groupCount >= plan.maxGroups;
-
-  const upgrade = useCallback((newPlanId) => {
-    if (!user) return;
-    const subs = store.where('subscriptions', 'userId', user.id);
-    if (subs.length > 0) {
-      store.update('subscriptions', subs[0].id, { planId: newPlanId, updatedAt: new Date().toISOString() });
-    } else {
-      store.add('subscriptions', { userId: user.id, planId: newPlanId, activatedAt: new Date().toISOString() });
+      await refresh(user.id);
+    } finally {
+      setUpgrading(false);
     }
-    setPlanId(newPlanId);
-  }, [user]);
+  }, [user, refresh]);
 
   return (
-    <SubscriptionContext.Provider value={{ planId, plan, groupCount, remaining, atLimit, upgrade }}>
+    <SubscriptionContext.Provider value={{
+      plan,
+      planTier,
+      createdGroupCount,
+      canCreateGroup,
+      remainingGroups,
+      loading,
+      upgrading,
+      upgrade,
+    }}>
       {children}
     </SubscriptionContext.Provider>
   );

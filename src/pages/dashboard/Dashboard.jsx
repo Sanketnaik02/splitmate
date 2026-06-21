@@ -48,7 +48,7 @@ export default function Dashboard() {
     return () => clearTimeout(timer);
   }, []);
 
-  const { plan, groupCount, remaining } = useSubscription();
+  const { plan, createdGroupCount, remainingGroups } = useSubscription();
   const [allExpenses, setAllExpenses] = React.useState([]);
   const [allSettlements, setAllSettlements] = React.useState([]);
 
@@ -243,17 +243,29 @@ export default function Dashboard() {
             <Badge variant={plan.id === 'free' ? 'default' : 'primary'} size="sm">{plan.name}</Badge>
           </div>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-sm text-gray-700 dark:text-gray-200">Groups Used</span>
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">{groupCount} / {plan.maxGroups}</span>
+            <span className="text-sm text-gray-700 dark:text-gray-200">Groups Created</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+              {plan.maxGroups === -1
+                ? `${createdGroupCount} / Unlimited`
+                : `${createdGroupCount} / ${plan.maxGroups}`}
+            </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-1.5 mb-3 overflow-hidden">
-            <div
-              className="bg-primary-500 h-full rounded-full transition-all"
-              style={{ width: `${Math.min(100, (groupCount / plan.maxGroups) * 100)}%` }}
-            />
-          </div>
+          {plan.maxGroups > 0 && (
+            <div className="w-full bg-gray-200 rounded-full h-1.5 mb-3 overflow-hidden">
+              <div
+                className="bg-primary-500 h-full rounded-full transition-all"
+                style={{ width: `${Math.min(100, (createdGroupCount / plan.maxGroups) * 100)}%` }}
+              />
+            </div>
+          )}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500 dark:text-gray-300">{remaining > 0 ? `${remaining} remaining` : 'No groups left'}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-300">
+              {plan.maxGroups === -1
+                ? 'Unlimited'
+                : remainingGroups > 0
+                  ? `${remainingGroups} remaining`
+                  : 'No groups left'}
+            </span>
             {plan.id === 'free' && (
               <Button size="sm" variant="ghost" onClick={() => navigate('/subscription')}>Upgrade</Button>
             )}
