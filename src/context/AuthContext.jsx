@@ -43,7 +43,6 @@ async function ensureProfile(sessionUser) {
     photo_url: meta.avatar_url || meta.picture || null,
     phone: '',
     default_currency: 'INR',
-    splitmate_id: undefined,
   };
 
   console.log('[Auth] ensureProfile: upserting profile for', sessionUser.email);
