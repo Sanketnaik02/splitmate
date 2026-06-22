@@ -1,4 +1,4 @@
-import { ADMIN_EMAILS } from '../config/constants';
+import { ADMIN_EMAILS, FOUNDER_EMAIL } from '../config/constants';
 
 /**
  * isAdmin — production-safe admin email check.
@@ -24,4 +24,21 @@ export function isAdmin(email) {
   return ADMIN_EMAILS.some(
     (adminEmail) => adminEmail.toLowerCase() === email.toLowerCase()
   );
+}
+
+/**
+ * isFounder — single source of truth for founder detection.
+ *
+ * Uses exact, case-insensitive comparison against FOUNDER_EMAIL.
+ *
+ * This is the centralized check that every component should use
+ * when determining founder-level access (unlimited groups,
+ * subscription bypass, admin features).
+ *
+ * @param {Object|null|undefined} user - The user object from AuthContext
+ * @returns {boolean}
+ */
+export function isFounder(user) {
+  if (!user || !user.email) return false;
+  return user.email.toLowerCase() === FOUNDER_EMAIL.toLowerCase();
 }

@@ -168,7 +168,7 @@ export const groupService = {
         amount: data.amount,
         paid_by_member_id: data.paid_by_member_id,
         created_by: userId,
-        split_type: data.split_type || 'equal',
+        split_type: 'equal',
         date: data.date || new Date().toISOString(),
       })
       .select()

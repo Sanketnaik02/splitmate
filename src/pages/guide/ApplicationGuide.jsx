@@ -6,66 +6,97 @@ const sections = [
   {
     icon: '👋',
     title: 'What is SplitMate?',
-    content: 'SplitMate is a simple app that helps you split expenses with friends, family, or roommates. No more mental math or awkward conversations about who owes what. Just add expenses, SplitMate calculates everything for you.',
+    content: 'SplitMate is a modern expense-splitting app that helps you track shared expenses with friends, family, or roommates. Add expenses, split them automatically, and settle up — all synced to the cloud. No more mental math or awkward conversations about who owes what.',
   },
   {
-    icon: '🚀',
-    title: 'Getting Started',
-    content: 'Sign up with your name and email, then log in. Your first dashboard will be empty — time to create a group!',
-    steps: ['Tap "Create Group" on the Dashboard', 'Give your group a name (e.g. "Goa Trip 2025")', 'Pick a category', 'Tap "Create Group"'],
-  },
-  {
-    icon: '👥',
-    title: 'Groups & Members',
-    content: 'A group is where you track shared expenses. You can have multiple groups — one for each trip, flat, or event.',
-    steps: ['Open a group from the Dashboard or Groups page', 'Tap "Add Member" to add people by name', 'Each member can see all expenses in the group', 'The person who created the group is the Admin'],
-  },
-  {
-    icon: '💸',
-    title: 'Adding Expenses',
-    content: 'Once your group has members, start adding expenses. Each expense needs a description, amount, category, who paid, and how to split it.',
-    steps: ['Open a group → tap "+ Add Expense"', 'Enter the amount and description', 'Choose a category (Food, Transport, etc.)', 'Select who paid', 'Choose how to split: Equal or Shares', 'Tap "Add Expense"'],
-  },
-  {
-    icon: '⚖️',
-    title: 'Splitting Methods',
-    content: 'Equal split divides the amount equally among selected members. Shares split lets you assign different shares (e.g. one person pays double).',
+    icon: '🔐',
+    title: 'Authentication',
+    content: 'SplitMate offers multiple ways to sign in. Your session is persisted securely, so you stay logged in even after closing the browser.',
     items: [
-      { label: 'Equal Split', desc: 'Everyone pays the same amount. Great for most situations.' },
-      { label: 'Shares Split', desc: 'Each person gets a different share. Use when someone should pay more.' },
+      { label: 'Email Login', desc: 'Sign up or sign in with your email and password.' },
+      { label: 'Google Login', desc: 'Use your Google account for one-click authentication.' },
+      { label: 'Session Persistence', desc: 'Your session is remembered across browser sessions. No need to log in every time.' },
     ],
   },
   {
-    icon: '📊',
-    title: 'Balances',
-    content: 'The Balances tab in each group shows who owes what. Green means someone is owed money, red means they owe money. The Dashboard shows your overall balance across all groups.',
+    icon: '👤',
+    title: 'Profile System',
+    content: 'Your profile is your identity in SplitMate. Manage your details and get a unique identifier.',
+    items: [
+      { label: 'Profile Management', desc: 'Update your display name, phone number, and profile photo from the Profile page.' },
+      { label: 'SplitMate ID', desc: 'Every user gets a unique SplitMate ID (e.g. SM00024) automatically on signup. This ID is used internally for consistent identification.' },
+    ],
   },
   {
-    icon: '✅',
-    title: 'Settle Up',
-    content: 'When someone pays their share, record it in Settle Up. This clears the debt and updates everyone\'s balance.',
-    steps: ['Open a group → tap "Settle Up"', 'Choose who is paying and who is receiving', 'Enter the amount', 'Tap "Add Settlement"'],
+    icon: '👥',
+    title: 'Groups',
+    content: 'Groups are the foundation of SplitMate. All expenses and settlements live inside a group.',
+    items: [
+      { label: 'Create Groups', desc: 'Create a group for any trip, flat, or event. Give it a name and category.' },
+      { label: 'Join Groups', desc: 'Join existing groups created by others through invitations.' },
+      { label: 'Invitations', desc: 'Send and receive group invitations. Accept or reject pending invites.' },
+      { label: 'Group Member Management', desc: 'View all members in a group. See who has paid, who owes, and each person\'s balance.' },
+    ],
   },
   {
-    icon: '🌙',
-    title: 'Dark Mode',
-    content: 'Prefer a darker screen? Go to Profile and toggle "Switch to Dark Mode". Your preference is saved and will be there even after you close the app.',
+    icon: '💸',
+    title: 'Expenses',
+    content: 'Once your group has members, start adding expenses. Each expense is automatically split and tracked.',
+    items: [
+      { label: 'Add Expenses', desc: 'Enter the amount, description, category, who paid, and how to split. Everyone\'s share is calculated instantly.' },
+      { label: 'Expense Splitting', desc: 'Split equally among selected members or use shares for custom amounts.' },
+      { label: 'Expense Tracking', desc: 'View all expenses in a group, who paid what, and each person\'s share.' },
+    ],
+  },
+  {
+    icon: '🤝',
+    title: 'Settlements',
+    content: 'When someone pays their share, record it as a settlement. This clears the debt and updates everyone\'s balance.',
+    items: [
+      { label: 'Settlement Recording', desc: 'Record payments between members to settle debts. Choose who is paying and who is receiving.' },
+      { label: 'Balance Management', desc: 'Real-time balance tracking per group and overall. Green means someone owes you, red means you owe them.' },
+    ],
+  },
+  {
+    icon: '🔔',
+    title: 'Notifications',
+    content: 'Stay informed about activity in your groups with real-time notifications.',
+    items: [
+      { label: 'Real-Time Notifications', desc: 'Get notified instantly when expenses are added, updated, or settled.' },
+      { label: 'Invitation Alerts', desc: 'Receive alerts when someone invites you to a group. Accept or decline directly from notifications.' },
+    ],
   },
   {
     icon: '💎',
     title: 'Subscription Plans',
-    content: 'SplitMate is free for up to 5 groups. Need more? Check out the Plans page for Starter, Pro, or Business plans with higher group limits.',
+    content: 'SplitMate offers three lifetime plans. Choose the one that fits your needs. No monthly fees — pay once, use forever.',
     items: [
-      { label: 'Free', desc: '5 groups, unlimited members, equal split, dark mode' },
-      { label: 'Starter (₹20/mo)', desc: '10 groups, percentage & exact split' },
-      { label: 'Pro (₹100/mo)', desc: '30 groups, expense reports, priority support' },
-      { label: 'Business (₹150/mo)', desc: '50 groups, multi-currency, data export, admin controls' },
+      { label: 'Free Plan', desc: 'Up to 2 groups. Includes all core features: expenses, splits, settlements, dark mode, cloud sync.' },
+      { label: 'Starter Plan (₹49)', desc: 'Up to 10 groups. Everything in Free, plus higher group limits. Lifetime access.' },
+      { label: 'Premium Plan (₹149)', desc: 'Unlimited groups. Everything in Starter, plus unlimited group creation. Lifetime access.' },
     ],
   },
   {
-    icon: '💾',
-    title: 'Your Data',
-    content: 'All your data is stored locally on your device. Nothing is sent to any server. Your groups, members, and expenses stay with you. Clearing browser data will remove everything, so be careful!',
+    icon: '🛡️',
+    title: 'Admin Features',
+    content: 'Founder-level tools for managing and monitoring the SplitMate platform.',
+    items: [
+      { label: 'Founder Dashboard', desc: 'Access analytics including user counts, group counts, expense volume, and subscription data.' },
+      { label: 'Founder Tools', desc: 'Founder-only section in the Profile page with a direct link to the Admin Dashboard.' },
+      { label: 'Protected Admin Access', desc: 'Admin routes are protected with access control. Only authorized accounts can access admin features.' },
+    ],
+  },
+  {
+    icon: '⚙️',
+    title: 'System Features',
+    content: 'SplitMate is backed by modern infrastructure and designed for reliability, performance, and scalability.',
+    items: [
+      { label: 'Supabase Cloud Sync', desc: 'All data is synchronized to Supabase PostgreSQL in real time. Your data is safe, backed up, and accessible across devices.' },
+      { label: 'Dark Mode', desc: 'Full dark mode support across the entire app. Toggle from the Profile page. Your preference is saved.' },
+      { label: 'Secure Authentication', desc: 'Authentication is handled by Supabase Auth with Row Level Security. Your data is private and secure.' },
+      { label: 'Backend Driven Architecture', desc: 'All business logic runs on the backend — trigger functions, security definer functions, and RLS policies ensure data integrity.' },
+      { label: 'Mobile App Ready Architecture', desc: 'Built with responsive design principles. The UI adapts to any screen size and is ready for mobile app packaging.' },
+    ],
   },
 ];
 
@@ -93,17 +124,6 @@ export default function ApplicationGuide() {
                 <h2 className="text-base font-bold text-gray-900 dark:text-white">{section.title}</h2>
               </div>
               <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed mb-2">{section.content}</p>
-
-              {section.steps && (
-                <ol className="space-y-1.5 ml-1">
-                  {section.steps.map((step, j) => (
-                    <li key={j} className="text-sm text-gray-700 dark:text-gray-200 flex items-start gap-2">
-                      <span className="w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-xs font-semibold flex items-center justify-center flex-shrink-0 mt-0.5">{j + 1}</span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              )}
 
               {section.items && (
                 <div className="space-y-2 ml-1 mt-1">

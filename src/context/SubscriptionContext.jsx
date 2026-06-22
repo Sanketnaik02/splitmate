@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { useAuth } from './AuthContext';
 import { subscriptionService } from '../lib/subscriptionService';
 import { SUBSCRIPTION_PLANS } from '../config/constants';
+import { isFounder } from '../utils/admin';
 
 const SubscriptionContext = createContext();
 
@@ -19,6 +20,22 @@ export function SubscriptionProvider({ children }) {
       setLoading(false);
       return;
     }
+
+    if (isFounder(user)) {
+      setPlan({
+        id: 'premium',
+        name: 'Premium',
+        icon: '👑',
+        maxGroups: -1,
+        pricePaise: 0,
+        features: ['Unlimited groups', 'All features'],
+        popular: true,
+      });
+      setCreatedGroupCount(0);
+      setLoading(false);
+      return;
+    }
+
     try {
       const [planData, count] = await Promise.all([
         subscriptionService.getUserPlan(userId),

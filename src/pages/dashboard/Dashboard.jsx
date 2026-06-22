@@ -8,6 +8,7 @@ import GroupCard from '../../components/group/GroupCard';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
+import Modal from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { useGroup } from '../../context/GroupContext';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -42,6 +43,15 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { groups } = useGroup();
   const [loading, setLoading] = React.useState(true);
+  const [showNoGroupModal, setShowNoGroupModal] = React.useState(false);
+
+  const handleAddExpense = () => {
+    if (groups.length === 0) {
+      setShowNoGroupModal(true);
+    } else {
+      navigate('/expenses/new');
+    }
+  };
 
   React.useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 600);
@@ -322,10 +332,26 @@ export default function Dashboard() {
       </div>
 
       <QuickActions
-        onAddExpense={() => navigate('/expenses/new')}
+        onAddExpense={handleAddExpense}
         onCreateGroup={() => navigate('/groups/new')}
         onSettleUp={groups.length > 0 ? () => navigate(`/groups/${groups[0].id}/settle`) : undefined}
       />
+
+      <Modal
+        isOpen={showNoGroupModal}
+        onClose={() => setShowNoGroupModal(false)}
+        title="Create Your First Group"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowNoGroupModal(false)}>Cancel</Button>
+            <Button onClick={() => { setShowNoGroupModal(false); navigate('/groups/new'); }}>Create Group</Button>
+          </>
+        }
+      >
+        <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
+          Expenses can only be added inside a group. Please create or join a group first.
+        </p>
+      </Modal>
     </AppLayout>
   );
 }

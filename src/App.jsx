@@ -26,6 +26,7 @@ import EditProfile from './pages/profile/EditProfile';
 import ProfileCompletion from './pages/profile/ProfileCompletion';
 import Notifications from './pages/notifications/Notifications';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import UserManagement from './pages/admin/UserManagement';
 import ApplicationGuide from './pages/guide/ApplicationGuide';
 import NotFound from './pages/NotFound';
 
@@ -67,6 +68,7 @@ export default function App() {
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/guide" element={<ApplicationGuide />} />
               <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
+              <Route path="/admin/users" element={<RequireAdmin><UserManagement /></RequireAdmin>} />
             </Route>
 
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

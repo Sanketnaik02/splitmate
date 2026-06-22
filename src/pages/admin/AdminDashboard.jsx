@@ -5,6 +5,7 @@ import { adminService } from '../../lib/adminService';
 import { isAdmin } from '../../utils/admin';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 function StatCard({ icon, label, value, accent }) {
@@ -235,6 +236,21 @@ export default function AdminDashboard() {
             </div>
           </Card>
         </div>
+
+        <Card padding="p-4" elevated className="mt-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">👥</span>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">User Management</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">View and manage user subscription plans</p>
+              </div>
+            </div>
+            <Button size="sm" onClick={() => navigate('/admin/users')}>
+              Manage Users
+            </Button>
+          </div>
+        </Card>
 
         <div className="h-12" />
       </div>

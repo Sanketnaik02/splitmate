@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import AppLayout from '../../layouts/AppLayout';
 import Input from '../../components/ui/Input';
@@ -12,7 +12,7 @@ import { useGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { validateExpenseAmount, validateExpenseDescription } from '../../utils/validators';
-import { calcEqualSplit, calcSharesSplit } from '../../utils/calculators';
+import { calcEqualSplit } from '../../utils/calculators';
 
 export default function AddExpense() {
   const navigate = useNavigate();
@@ -28,8 +28,14 @@ export default function AddExpense() {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('food');
-  const currentUserMemberId = groupMembers.find(m => m.userId === user?.id)?.id || '';
-  const [paidByMemberId, setPaidByMemberId] = useState(currentUserMemberId);
+  const [paidByMemberId, setPaidByMemberId] = useState('');
+
+  useEffect(() => {
+    const userMemberId = groupMembers.find(m => m.userId === user?.id)?.id || '';
+    if (userMemberId) {
+      setPaidByMemberId(prev => prev || userMemberId);
+    }
+  }, [groupMembers, user]);
   const [splitType, setSplitType] = useState('equal');
   const [splitAmong, setSplitAmong] = useState(groupMembers.map((m) => m.id));
   const [errors, setErrors] = useState({});
@@ -68,18 +74,7 @@ export default function AddExpense() {
     setSubmitting(true);
 
     const amt = parseFloat(amount);
-    let splitDetails;
-
-    if (splitType === 'equal') {
-      splitDetails = calcEqualSplit(amt, splitAmong);
-    } else if (splitType === 'shares') {
-      const shares = {};
-      splitAmong.forEach((mid) => { shares[mid] = 1; });
-      splitDetails = calcSharesSplit(amt, shares);
-    } else {
-      splitDetails = {};
-      splitAmong.forEach((mid) => { splitDetails[mid] = amt / splitAmong.length; });
-    }
+    const splitDetails = calcEqualSplit(amt, splitAmong);
 
     const splits = Object.entries(splitDetails).map(([memberId, shareAmount]) => ({
       member_id: memberId,
@@ -133,6 +128,9 @@ export default function AddExpense() {
               onChange={(e) => setPaidByMemberId(e.target.value)}
               className="w-full px-4 py-2.5 text-sm bg-white dark:bg-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:border-primary-500"
             >
+              {groupMembers.length === 0 && (
+                <option value="">No members available</option>
+              )}
               {groupMembers.map((m) => (
                 <option key={m.id} value={m.id}>{m.userId === user?.id ? `You (${user.displayName})` : m.displayName}</option>
               ))}

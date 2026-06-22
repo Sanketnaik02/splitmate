@@ -75,6 +75,64 @@ export const adminService = {
     return count || 0;
   },
 
+  async getAllUsers() {
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('id, email, display_name, splitmate_id, created_at')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const { data: subscriptions, error: subError } = await supabase
+      .from('user_subscriptions')
+      .select('user_id, plan_id, updated_at');
+
+    if (subError) throw subError;
+
+    const subMap = {};
+    (subscriptions || []).forEach(s => { subMap[s.user_id] = s; });
+
+    return (profiles || []).map(p => ({
+      id: p.id,
+      email: p.email,
+      display_name: p.display_name,
+      splitmate_id: p.splitmate_id,
+      created_at: p.created_at,
+      plan_id: subMap[p.id]?.plan_id || 'free',
+      subscription_updated_at: subMap[p.id]?.updated_at || null,
+    }));
+  },
+
+  async updateUserPlan(adminId, targetUserId, oldPlanId, newPlanId) {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .upsert({
+        user_id: targetUserId,
+        plan_id: newPlanId,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const { error: auditError } = await supabase
+      .from('admin_actions')
+      .insert({
+        admin_id: adminId,
+        target_user_id: targetUserId,
+        action: 'plan_change',
+        old_value: oldPlanId,
+        new_value: newPlanId,
+      });
+
+    if (auditError) {
+      console.warn('[AdminService] Failed to log audit action:', auditError.message);
+    }
+
+    return data;
+  },
+
   async getRecentActivity() {
     const [users, groups, expenses] = await Promise.all([
       supabase
