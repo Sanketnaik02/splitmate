@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { store } from '../utils/storage';
 import { useAuth } from './AuthContext';
 import { groupService } from '../lib/groupService';
+import { track } from '../lib/analytics';
 
 const GroupContext = createContext();
 
@@ -178,6 +179,7 @@ export function GroupProvider({ children }) {
       createdBy: user.id,
       currency: 'INR',
     });
+    track('group_created', { group_id: newGroup.id, name: data.name, category: data.category || 'other' });
     await loadGroups();
     return newGroup;
   }, [user, loadGroups]);
@@ -244,6 +246,7 @@ export function GroupProvider({ children }) {
     if (!user) throw new Error('Not authenticated');
     const exp = await groupService.createExpense(groupId, expenseData, user.id);
     if (activeGroup?.id === groupId) setExpenses(prev => [...prev, exp]);
+    track('expense_created', { group_id: groupId, expense_id: exp.id, amount: expenseData.amount, category: expenseData.category });
     await loadGroups();
     return exp;
   }, [activeGroup, loadGroups, user]);
@@ -267,6 +270,7 @@ export function GroupProvider({ children }) {
     if (!user) throw new Error('Not authenticated');
     const s = await groupService.createSettlement(groupId, settlementData, user.id);
     if (activeGroup?.id === groupId) setSettlements(prev => [...prev, s]);
+    track('settlement_created', { group_id: groupId, settlement_id: s.id, amount: settlementData.amount });
     await loadGroups();
     return s;
   }, [activeGroup, loadGroups, user]);

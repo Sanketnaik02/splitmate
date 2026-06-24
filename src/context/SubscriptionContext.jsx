@@ -79,6 +79,7 @@ export function SubscriptionProvider({ children }) {
 
       if (newPlanId === 'free') {
         await subscriptionService.upgradePlan(user.id, 'free', null);
+        track('subscription_purchased', { plan_id: 'free', amount_paise: 0 });
       } else {
         const amountPaise = targetPlan.price * 100;
         const payment = await subscriptionService.createPayment({
@@ -99,6 +100,7 @@ export function SubscriptionProvider({ children }) {
         }
 
         await subscriptionService.upgradePlan(user.id, newPlanId, payment.id);
+        track('subscription_purchased', { plan_id: newPlanId, amount_paise: amountPaise });
       }
 
       await refresh(user.id);

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { track, identify, resetAnalytics } from '../lib/analytics';
 
 const AuthContext = createContext();
 
@@ -124,6 +125,11 @@ export function AuthProvider({ children }) {
 
     if (profile) {
       console.log('[Auth] resolveUser: profile resolved, setting user');
+      identify(profile.id, {
+        email: profile.email,
+        display_name: profile.displayName,
+        splitmate_id: profile.splitmateId,
+      });
     } else {
       console.warn('[Auth] resolveUser: using fallback from session metadata');
     }
@@ -244,6 +250,7 @@ export function AuthProvider({ children }) {
           userData = mapSessionUser(data.user, null);
         }
         setUser(userData);
+        track('user_signup', { email, method: 'email' });
         return userData;
       }
 
@@ -272,6 +279,7 @@ export function AuthProvider({ children }) {
         userData = mapSessionUser(data.user, null);
       }
       setUser(userData);
+      track('user_login', { method: 'email' });
       return userData;
     } finally {
       delete pendingRef.current[key];
@@ -300,6 +308,7 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     setUser(null);
+    resetAnalytics();
   }), []);
 
   const updateProfile = useCallback(async (updates) => {

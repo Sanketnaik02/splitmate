@@ -7,8 +7,9 @@ import Select from '../../components/form/Select';
 import Card from '../../components/ui/Card';
 import UpgradeModal from '../../components/subscription/UpgradeModal';
 import { GROUP_CATEGORIES } from '../../config/constants';
-import { validateGroupName } from '../../utils/validators';
 import { useGroup } from '../../context/GroupContext';
+import { createGroupSchema, validate } from '../../validators';
+import { captureError } from '../../lib/sentry';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -36,6 +37,7 @@ export default function CreateGroup() {
         setShowUpgradeModal(true);
         return;
       }
+      captureError(err, { tag: 'group.create', extra: { name: name.trim(), category } });
       showToast('Failed to create group: ' + err.message, 'error');
     }
   };
@@ -43,8 +45,12 @@ export default function CreateGroup() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
-    const nameErr = validateGroupName(name);
-    if (nameErr) { setError(nameErr); return; }
+    const result = validate(createGroupSchema, { name });
+    if (!result.success) {
+      const firstError = Object.values(result.errors)[0];
+      setError(firstError || 'Invalid group name');
+      return;
+    }
     if (!canCreateGroup) {
       setShowUpgradeModal(true);
       return;

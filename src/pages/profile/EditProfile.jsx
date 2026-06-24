@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import Avatar from '../../components/ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
+import { updateProfileSchema, validate } from '../../validators';
 
 export default function EditProfile() {
   const navigate = useNavigate();
@@ -16,7 +17,12 @@ export default function EditProfile() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name.trim()) { showToast('Name is required', 'error'); return; }
+    const result = validate(updateProfileSchema, { display_name: name, phone });
+    if (!result.success) {
+      const firstError = Object.values(result.errors)[0];
+      showToast(firstError || 'Name is required', 'error');
+      return;
+    }
     updateProfile({ displayName: name.trim(), phone: phone.trim() });
     showToast('Profile updated!', 'success');
     navigate('/profile');

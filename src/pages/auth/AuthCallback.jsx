@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { track } from '../../lib/analytics';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ export default function AuthCallback() {
 
       if (data?.session) {
         console.log('[AuthCallback] Session established for:', data.session.user?.email);
+        track('google_login', { email: data.session.user?.email });
         setStatus('Signed in! Redirecting...');
         // Profile will be handled by AuthContext's resolveUser
         await new Promise(r => setTimeout(r, 500));

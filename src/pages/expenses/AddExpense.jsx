@@ -11,8 +11,9 @@ import ValidationPopup from '../../components/ui/ValidationPopup';
 import { useGroup } from '../../context/GroupContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/ui/Toast';
-import { validateExpenseAmount, validateExpenseDescription } from '../../utils/validators';
 import { calcEqualSplit } from '../../utils/calculators';
+import { addExpenseSchema, validate } from '../../validators';
+import { captureError } from '../../lib/sentry';
 
 export default function AddExpense() {
   const navigate = useNavigate();
@@ -50,27 +51,38 @@ export default function AddExpense() {
     setValidationPopup({ isOpen: false, title: '', message: '' });
   };
 
-  const validate = () => {
+  const validateForm = () => {
+    const parsedAmount = amount === '' ? NaN : parseFloat(amount);
+    const result = validate(addExpenseSchema, {
+      description,
+      amount: parsedAmount,
+      category,
+      paid_by_member_id: paidByMemberId,
+    });
+
     const errs = {};
-    const descErr = validateExpenseDescription(description);
-    if (descErr) {
-      showValidationPopup('Description Required', 'Please enter a description before adding an expense.');
-      return false;
+    if (!result.success) {
+      if (result.errors.description) {
+        showValidationPopup('Description Required', result.errors.description);
+        return false;
+      }
+      if (result.errors.amount) {
+        showValidationPopup('Invalid Amount', result.errors.amount);
+        return false;
+      }
+      if (result.errors.paid_by_member_id) {
+        errs.paidByMemberId = result.errors.paid_by_member_id;
+      }
     }
-    const amtErr = validateExpenseAmount(amount);
-    if (amtErr) {
-      showValidationPopup('Invalid Amount', amtErr);
-      return false;
-    }
+
     if (splitAmong.length === 0) errs.splitAmong = 'Select at least one person';
-    if (!paidByMemberId) errs.paidByMemberId = 'Select who paid';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate() || !groupId) return;
+    if (!validateForm() || !groupId) return;
     setSubmitting(true);
 
     const amt = parseFloat(amount);
@@ -95,6 +107,7 @@ export default function AddExpense() {
       showToast('Expense added!', 'success');
       navigate(`/groups/${groupId}`);
     } catch (err) {
+      captureError(err, { tag: 'expense.create', extra: { groupId, description: description.trim(), category, amount: parseFloat(amount) } });
       showToast(err.message || 'Failed to add expense', 'error');
     } finally {
       setSubmitting(false);

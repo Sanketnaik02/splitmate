@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useToast } from '../../components/ui/Toast';
 import { SUBSCRIPTION_PLANS } from '../../config/constants';
+import { track } from '../../lib/analytics';
 
 export default function Subscription() {
   const navigate = useNavigate();
@@ -15,6 +16,10 @@ export default function Subscription() {
   const { planTier, upgrading, upgrade } = useSubscription();
   const { showToast } = useToast();
   const [upgradingId, setUpgradingId] = useState(null);
+
+  useEffect(() => {
+    track('subscription_viewed', { current_plan: planTier });
+  }, [planTier]);
 
   useEffect(() => {
     if (!upgrading) setUpgradingId(null);

@@ -14,7 +14,10 @@ import { formatCurrency } from '../../utils/currency';
 import { getDisplayName } from '../../utils/displayName';
 import { useToast } from '../../components/ui/Toast';
 import { supabase } from '../../lib/supabase';
-import { isSplitmateId, formatSplitmateId } from '../../utils/splitmateId';
+import { formatSplitmateId } from '../../utils/splitmateId';
+import { splitmateIdSchema, validate } from '../../validators';
+import { captureError } from '../../lib/sentry';
+import { track } from '../../lib/analytics';
 
 export default function GroupDetail() {
   const { groupId } = useParams();
@@ -45,22 +48,25 @@ export default function GroupDetail() {
     }
     try {
       await addGuestMember(groupId, name);
+      track('member_invited', { group_id: groupId, method: 'guest', name });
       showToast(`${name} added to group`, 'success');
       setInviteName('');
       setShowInvite(false);
       setInviteMode('guest');
     } catch (err) {
+      captureError(err, { tag: 'invitation.guest', extra: { groupId, name } });
       showToast(err.message || 'Failed to add guest', 'error');
     }
   };
 
   const handleInviteRegisteredUser = async () => {
     if (!splitmateId.trim()) return;
-    const formatted = formatSplitmateId(splitmateId);
-    if (!isSplitmateId(formatted)) {
-      showToast('Invalid SplitMate ID format', 'error');
+    const result = validate(splitmateIdSchema, splitmateId.trim());
+    if (!result.success) {
+      showToast(result.errors._root || 'Invalid SplitMate ID format (e.g. SM00001)', 'error');
       return;
     }
+    const formatted = formatSplitmateId(splitmateId);
 
     setInviteSubmitting(true);
     try {
@@ -111,11 +117,13 @@ export default function GroupDetail() {
 
       if (insertError) throw insertError;
 
+      track('member_invited', { group_id: groupId, method: 'splitmate_id', receiver_id: receiver.id });
       showToast(`Invitation sent to ${receiver.display_name}`, 'success');
       setSplitmateId('');
       setShowInvite(false);
       setInviteMode('guest');
     } catch (err) {
+      captureError(err, { tag: 'invitation.send', extra: { groupId, splitmateId: formatted } });
       showToast(err.message || 'Failed to send invitation', 'error');
     } finally {
       setInviteSubmitting(false);

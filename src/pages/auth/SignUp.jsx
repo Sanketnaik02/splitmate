@@ -4,8 +4,9 @@ import AuthLayout from '../../layouts/AuthLayout';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
-import { validateEmail, validatePassword } from '../../utils/validators';
 import { getAuthErrorMessage } from '../../utils/authErrors';
+import { signupSchema, validate } from '../../validators';
+import { captureError } from '../../lib/sentry';
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -23,16 +24,17 @@ export default function SignUp() {
     e.preventDefault();
     if (submitRef.current) return;
     setError('');
-    if (!name.trim()) { setError('Please enter your name'); return; }
-    if (!email.trim()) { setError('Please enter your email address'); return; }
-    if (!validateEmail(email)) { setError('Please enter a valid email address'); return; }
-    const pwdErr = validatePassword(password);
-    if (pwdErr) { setError(pwdErr); return; }
+    const validation = validate(signupSchema, { name, email, password });
+    if (!validation.success) {
+      const firstError = Object.values(validation.errors)[0];
+      setError(firstError || 'Please check your input');
+      return;
+    }
     submitRef.current = true;
     setSubmitting(true);
     try {
-      const result = await signUp(name, email, password);
-      if (result) {
+      const session = await signUp(name, email, password);
+      if (session) {
         // Auto-logged in
         navigate('/dashboard');
       } else {
@@ -41,6 +43,7 @@ export default function SignUp() {
       }
     } catch (err) {
       const msg = getAuthErrorMessage(err);
+      captureError(err, { tag: 'auth.signup', extra: { email } });
       setError(msg || err?.message || 'Something went wrong. Try again.');
     } finally {
       submitRef.current = false;
@@ -56,6 +59,7 @@ export default function SignUp() {
       await signInWithGoogle();
     } catch (err) {
       const msg = getAuthErrorMessage(err);
+      captureError(err, { tag: 'auth.google', extra: { page: 'signup' } });
       setError(msg || 'Google sign-in failed. Try again.');
     } finally {
       submitRef.current = false;

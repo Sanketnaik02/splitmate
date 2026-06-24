@@ -5,6 +5,8 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
 import { getAuthErrorMessage } from '../../utils/authErrors';
+import { loginSchema, validate } from '../../validators';
+import { captureError } from '../../lib/sentry';
 
 export default function SignIn() {
   const navigate = useNavigate();
@@ -20,7 +22,12 @@ export default function SignIn() {
     e.preventDefault();
     if (submitRef.current) return;
     setError('');
-    if (!email || !password) { setError('Please fill in all fields'); return; }
+    const result = validate(loginSchema, { email, password });
+    if (!result.success) {
+      const firstError = Object.values(result.errors)[0];
+      setError(firstError || 'Please fill in all fields');
+      return;
+    }
     submitRef.current = true;
     setSubmitting(true);
     try {
@@ -28,6 +35,7 @@ export default function SignIn() {
       navigate('/dashboard');
     } catch (err) {
       const msg = getAuthErrorMessage(err);
+      captureError(err, { tag: 'auth.login', extra: { email } });
       setError(msg || 'Invalid email or password');
     } finally {
       submitRef.current = false;
@@ -43,6 +51,7 @@ export default function SignIn() {
       await signInWithGoogle();
     } catch (err) {
       const msg = getAuthErrorMessage(err);
+      captureError(err, { tag: 'auth.google', extra: { page: 'signin' } });
       setError(msg || 'Google sign-in failed. Try again.');
     } finally {
       submitRef.current = false;

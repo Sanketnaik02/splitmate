@@ -5,6 +5,7 @@ import { ToastProvider } from './components/ui/Toast';
 import { ThemeProvider } from './context/ThemeContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import ProtectedRoute from './components/navigation/ProtectedRoute';
+import SentryErrorBoundary from './components/error/SentryErrorBoundary';
 import { isAdmin } from './utils/admin';
 
 import SignIn from './pages/auth/SignIn';
@@ -46,6 +47,7 @@ export default function App() {
         <ToastProvider>
           <GroupProvider>
             <SubscriptionProvider>
+          <SentryErrorBoundary>
           <Routes>
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
@@ -76,6 +78,7 @@ export default function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </SentryErrorBoundary>
             </SubscriptionProvider>
           </GroupProvider>
         </ToastProvider>
