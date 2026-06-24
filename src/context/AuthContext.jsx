@@ -144,7 +144,13 @@ export function AuthProvider({ children }) {
 
     const init = async () => {
       console.log('[Auth] init: checking existing session');
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[Auth] init: URL hash:', window.location.hash);
+      console.log('[Auth] init: URL search:', window.location.search);
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.warn('[Auth] init: getSession error:', error.message);
+      }
+      console.log('[Auth] init: session found:', !!session, session?.user?.email);
       if (!cancelled) {
         if (session?.user) {
           const userData = await resolveUser(session.user);
@@ -273,14 +279,20 @@ export function AuthProvider({ children }) {
   }), []);
 
   const signInWithGoogle = useCallback(withDedup('google', async () => {
+    const origin = window.location.origin;
+    const redirectTo = `${origin}/auth/callback`;
     console.log('[Auth] signInWithGoogle: starting OAuth');
+    console.log('[Auth] signInWithGoogle: redirectTo =', redirectTo);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo,
       },
     });
-    if (error) throw error;
+    if (error) {
+      console.error('[Auth] signInWithGoogle error:', error);
+      throw error;
+    }
   }), []);
 
 
