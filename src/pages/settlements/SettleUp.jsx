@@ -54,11 +54,16 @@ export default function SettleUp() {
       showToast('Only the group creator can share the settlement summary', 'error');
       return;
     }
-    const cleaned = phoneNumber.replace(/[\s\-\(\)]/g, '');
-    if (!validatePhone(cleaned)) {
-      showToast('Please enter a valid phone number', 'error');
-      return;
-    }
+    let cleaned = phoneNumber.replace(/\D/g, '');
+
+if (cleaned.length === 10) {
+  cleaned = '91' + cleaned;
+}
+
+if (!/^91\d{10}$/.test(cleaned)) {
+  showToast('Please enter a valid Indian mobile number', 'error');
+  return;
+}
     const summaryLines = suggestedPayments.map((p) => {
       const fromName = getDisplayName(p.from, members);
       const toName = getDisplayName(p.to, members);
