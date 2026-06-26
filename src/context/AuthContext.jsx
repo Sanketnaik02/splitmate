@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, getAuthRedirect } from '../lib/supabase';
 import { track, identify, resetAnalytics } from '../lib/analytics';
 
 const AuthContext = createContext();
@@ -286,14 +286,15 @@ export function AuthProvider({ children }) {
       type: 'signup',
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: getAuthRedirect('/auth/callback'),
       },
     });
     if (error) throw error;
   }), []);
 
   const signInWithGoogle = useCallback(withDedup('google', async () => {
-    const redirectTo = `${window.location.origin}/auth/callback`;
+    const redirectTo = getAuthRedirect('/auth/callback');
+    console.log('[Auth] signInWithGoogle redirectTo:', redirectTo);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },

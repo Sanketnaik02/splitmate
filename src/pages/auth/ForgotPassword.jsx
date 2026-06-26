@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import AuthLayout from '../../layouts/AuthLayout';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
-import { supabase } from '../../lib/supabase';
+import { supabase, getAuthRedirect } from '../../lib/supabase';
 import { validateEmail } from '../../utils/validators';
 import { getAuthErrorMessage } from '../../utils/authErrors';
 import { useToast } from '../../components/ui/Toast';
@@ -35,7 +35,7 @@ export default function ForgotPassword() {
     setSubmitting(true);
     try {
       const { error: reqError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: getAuthRedirect('/reset-password'),
       });
       if (reqError) {
         const msg = getAuthErrorMessage(reqError);

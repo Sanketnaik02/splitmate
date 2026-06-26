@@ -28,3 +28,9 @@ export const supabase = createClient(url || '', anonKey || '', {
     flowType: 'pkce',
   },
 });
+
+export function getAuthRedirect(path = '/auth/callback') {
+  const redirectUrl = `${window.location.origin}${path}`;
+  console.log('[Supabase] getAuthRedirect:', redirectUrl);
+  return redirectUrl;
+}
