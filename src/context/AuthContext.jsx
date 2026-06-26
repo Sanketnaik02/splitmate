@@ -5,6 +5,16 @@ import { track, identify, resetAnalytics } from '../lib/analytics';
 const AuthContext = createContext();
 
 const AUTH_COOLDOWN_MS = 3000;
+const PROFILE_TIMEOUT_MS = 10000;
+
+function timeoutPromise(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Operation timed out: ${label}`)), ms)
+    ),
+  ]);
+}
 
 function mapProfile(data) {
   if (!data) return null;
@@ -29,7 +39,7 @@ async function fetchProfile(userId) {
 
   if (error) {
     console.error('[Auth] fetchProfile error:', error.message);
-    return null;
+    throw error;
   }
 
   return mapProfile(data);
@@ -48,22 +58,29 @@ async function ensureProfile(sessionUser) {
 
   console.log('[Auth] ensureProfile: upserting profile for', sessionUser.email);
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .upsert(profile, { onConflict: 'id' })
-    .select()
-    .maybeSingle();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PROFILE_TIMEOUT_MS);
 
-  if (error) {
-    console.warn('[Auth] ensureProfile error (may need migration):', error.message);
-    return null;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert(profile, { onConflict: 'id' })
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.warn('[Auth] ensureProfile error:', error.message);
+      throw error;
+    }
+
+    return mapProfile(data);
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return mapProfile(data);
 }
 
-function mapSessionUser(sessionUser, profile) {
-  return profile || {
+function mapSessionUser(sessionUser) {
+  return {
     id: sessionUser.id,
     email: sessionUser.email,
     displayName: sessionUser.user_metadata?.display_name || sessionUser.user_metadata?.full_name || sessionUser.email?.split('@')[0] || 'User',
@@ -116,11 +133,30 @@ export function AuthProvider({ children }) {
 
   async function resolveUser(sessionUser) {
     console.log('[Auth] resolveUser: checking profile for', sessionUser.email);
-    let profile = await fetchProfile(sessionUser.id);
+    let profile;
+    try {
+      profile = await timeoutPromise(
+        fetchProfile(sessionUser.id),
+        PROFILE_TIMEOUT_MS,
+        'fetchProfile'
+      );
+    } catch (err) {
+      console.warn('[Auth] fetchProfile failed:', err.message);
+      profile = null;
+    }
 
     if (!profile) {
       console.log('[Auth] resolveUser: no profile found, creating one');
-      profile = await ensureProfile(sessionUser);
+      try {
+        profile = await timeoutPromise(
+          ensureProfile(sessionUser),
+          PROFILE_TIMEOUT_MS,
+          'ensureProfile'
+        );
+      } catch (err) {
+        console.warn('[Auth] ensureProfile failed:', err.message);
+        profile = null;
+      }
     }
 
     if (profile) {
@@ -130,79 +166,78 @@ export function AuthProvider({ children }) {
         display_name: profile.displayName,
         splitmate_id: profile.splitmateId,
       });
-    } else {
-      console.warn('[Auth] resolveUser: using fallback from session metadata');
+      return profile;
     }
 
-    return profile || mapSessionUser(sessionUser, null);
+    console.warn('[Auth] resolveUser: using fallback from session metadata');
+    return mapSessionUser(sessionUser);
   }
 
   useEffect(() => {
     let cancelled = false;
-    let authResolved = false;
+    let resolved = false;
 
-    function safeFinish() {
-      if (!cancelled && !authResolved) {
-        authResolved = true;
-        setLoading(false);
-      }
+    function finish(newUser) {
+      if (cancelled || resolved) return;
+      resolved = true;
+      if (newUser !== undefined) setUser(newUser);
+      setLoading(false);
     }
 
     const init = async () => {
       console.log('[Auth] init: checking existing session');
-      console.log('[Auth] init: URL hash:', window.location.hash);
-      console.log('[Auth] init: URL search:', window.location.search);
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
         console.warn('[Auth] init: getSession error:', error.message);
       }
-      console.log('[Auth] init: session found:', !!session, session?.user?.email);
-      if (!cancelled) {
-        if (session?.user) {
-          const userData = await resolveUser(session.user);
-          if (!cancelled) {
-            setUser(userData);
-            safeFinish();
-            return;
-          }
-        } else {
-          console.log('[Auth] init: no session');
+
+      if (cancelled) return;
+
+      if (session?.user) {
+        const userData = await resolveUser(session.user);
+        if (!cancelled) {
+          finish(userData);
         }
-        // Do NOT set loading=false here — wait for onAuthStateChange
+      } else {
+        console.log('[Auth] init: no session');
       }
     };
 
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[Auth] onAuthStateChange: event=' + event, 'email=' + (session?.user?.email || 'none'), 'profile=' + (session?.user?.id || 'none'));
+      console.log('[Auth] onAuthStateChange: event=' + event, 'email=' + (session?.user?.email || 'none'));
 
-      if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
-        const userData = await resolveUser(session.user);
-        if (!cancelled) {
-          setUser(userData);
-          safeFinish();
+      if (cancelled) return;
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
+          const userData = await resolveUser(session.user);
+          if (!cancelled) {
+            finish(userData);
+          }
         }
       } else if (event === 'SIGNED_OUT') {
         console.log('[Auth] onAuthStateChange: signed out');
-        if (!cancelled) {
-          setUser(null);
-          safeFinish();
+        finish(null);
+      } else if (event === 'INITIAL_SESSION') {
+        if (session?.user) {
+          const userData = await resolveUser(session.user);
+          if (!cancelled) {
+            finish(userData);
+          }
+        } else {
+          finish(null);
         }
-      } else if (event === 'INITIAL_SESSION' && !session?.user) {
-        // INITIAL_SESSION confirms there's no session at all
-        console.log('[Auth] init: confirmed no session');
-        safeFinish();
       }
     });
 
-    // Safety timeout: force loading=false after 10s regardless
     const safetyTimeout = setTimeout(() => {
-      if (!authResolved) {
-        console.warn('[Auth] safety timeout: forcing loading=false');
-        safeFinish();
+      if (!resolved) {
+        console.warn('[Auth] safety timeout: forcing finish');
+        finish(null);
       }
-    }, 10000);
+    }, 15000);
 
     return () => {
       cancelled = true;
@@ -212,97 +247,62 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signUp = useCallback(withDedup('signUp', async (name, email, password) => {
-    const key = `signUp:${email.toLowerCase()}`;
-    if (pendingRef.current[key]) throw getPendingError();
-    if (checkCooldown(key)) throw getCooldownError();
-    pendingRef.current[key] = true;
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { display_name: name } },
-      });
-      if (error) throw error;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { display_name: name } },
+    });
+    if (error) throw error;
 
-      if (data?.user) {
-        try {
-          await supabase.from('profiles').insert({
-            id: data.user.id,
-            email,
-            display_name: name,
-            photo_url: null,
-            phone: '',
-            default_currency: 'INR',
-          });
-        } catch (profileErr) {
-          console.warn('[Auth] signUp profile insert error:', profileErr);
-        }
-      }
-
-      if (data?.session) {
-        let userData;
-        try {
-          userData = await resolveUser(data.user);
-        } catch {
-          userData = null;
-        }
-        if (!userData) {
-          userData = mapSessionUser(data.user, null);
-        }
-        setUser(userData);
-        track('user_signup', { email, method: 'email' });
-        return userData;
-      }
-
-      return null;
-    } finally {
-      delete pendingRef.current[key];
+    if (data?.session) {
+      const userData = await resolveUser(data.user);
+      track('user_signup', { email, method: 'email' });
+      return userData;
     }
+
+    return null;
   }), []);
 
   const signIn = useCallback(withDedup('signIn', async (email, password) => {
-    const key = `signIn:${email.toLowerCase()}`;
-    if (pendingRef.current[key]) throw getPendingError();
-    if (checkCooldown(key)) throw getCooldownError();
-    pendingRef.current[key] = true;
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-      let userData;
-      try {
-        userData = await resolveUser(data.user);
-      } catch {
-        userData = null;
+    if (error) {
+      if (error.message?.toLowerCase().includes('email not confirmed')) {
+        const typedErr = new Error('Please verify your email before signing in. Check your inbox for the confirmation link.');
+        typedErr.code = 'EMAIL_NOT_CONFIRMED';
+        typedErr.email = email;
+        throw typedErr;
       }
-      if (!userData) {
-        userData = mapSessionUser(data.user, null);
-      }
-      setUser(userData);
-      track('user_login', { method: 'email' });
-      return userData;
-    } finally {
-      delete pendingRef.current[key];
+      throw error;
     }
+
+    const userData = await resolveUser(data.user);
+    track('user_login', { method: 'email' });
+    return userData;
+  }), []);
+
+  const resendVerificationEmail = useCallback(withDedup('resendVerification', async (email) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) throw error;
   }), []);
 
   const signInWithGoogle = useCallback(withDedup('google', async () => {
-    const origin = window.location.origin;
-    const redirectTo = `${origin}/auth/callback`;
-    console.log('[Auth] signInWithGoogle: starting OAuth');
-    console.log('[Auth] signInWithGoogle: redirectTo =', redirectTo);
+    const redirectTo = `${window.location.origin}/auth/callback`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo,
-      },
+      options: { redirectTo },
     });
     if (error) {
       console.error('[Auth] signInWithGoogle error:', error);
       throw error;
     }
   }), []);
-
 
   const signOut = useCallback(withDedup('signOut', async () => {
     const { error } = await supabase.auth.signOut();
@@ -323,7 +323,7 @@ export function AuthProvider({ children }) {
       profile_completed: updates.profileCompleted ?? user.profileCompleted,
     });
     if (error) {
-      console.warn('[Auth] updateProfile upsert error (may need migration):', error.message);
+      console.warn('[Auth] updateProfile error:', error.message);
       return;
     }
     setUser(prev => ({ ...prev, ...updates }));
@@ -343,7 +343,10 @@ export function AuthProvider({ children }) {
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signInWithGoogle, signOut, updateProfile, completeProfile }}>
+    <AuthContext.Provider value={{
+      user, loading, signIn, signUp, signInWithGoogle, signOut,
+      updateProfile, completeProfile, resendVerificationEmail,
+    }}>
       {children}
     </AuthContext.Provider>
   );

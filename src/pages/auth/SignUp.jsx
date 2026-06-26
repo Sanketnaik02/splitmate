@@ -10,7 +10,7 @@ import { captureError } from '../../lib/sentry';
 
 export default function SignUp() {
   const navigate = useNavigate();
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, resendVerificationEmail } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,6 +18,8 @@ export default function SignUp() {
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [confirmRequired, setConfirmRequired] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
   const submitRef = useRef(false);
 
   const handleSubmit = async (e) => {
@@ -33,14 +35,8 @@ export default function SignUp() {
     submitRef.current = true;
     setSubmitting(true);
     try {
-      const session = await signUp(name, email, password);
-      if (session) {
-        // Auto-logged in
-        navigate('/dashboard');
-      } else {
-        // Email confirmation required
-        setConfirmRequired(true);
-      }
+      await signUp(name, email, password);
+      setConfirmRequired(true);
     } catch (err) {
       const msg = getAuthErrorMessage(err);
       captureError(err, { tag: 'auth.signup', extra: { email } });
@@ -48,6 +44,21 @@ export default function SignUp() {
     } finally {
       submitRef.current = false;
       setSubmitting(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email || resending) return;
+    setResending(true);
+    setResendSent(false);
+    try {
+      await resendVerificationEmail(email);
+      setResendSent(true);
+    } catch (err) {
+      const msg = getAuthErrorMessage(err);
+      setError(msg || 'Failed to resend verification email');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -70,17 +81,29 @@ export default function SignUp() {
   if (confirmRequired) {
     return (
       <AuthLayout
-        title="Check your email"
+        title="Verify your email"
         subtitle=""
         alternate={{ text: 'Back to', link: 'Sign in', to: '/signin' }}
       >
-        <div className="text-center py-4">
-          <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+        <div className="text-center py-4 space-y-4">
+          <div className="w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">✉️</span>
           </div>
           <p className="text-sm text-gray-700 dark:text-gray-200 mb-1">We sent a confirmation link to:</p>
-          <p className="text-sm font-semibold text-gray-900 dark:text-white mb-4">{email}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-300">Click the link in the email to activate your account, then sign in.</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-white">{email}</p>
+          <div className="h-px bg-gray-100 dark:bg-gray-700 my-4" />
+          <p className="text-xs text-gray-500 dark:text-gray-400">Click the link in the email to activate your account. Once verified, you can sign in.</p>
+          {resendSent ? (
+            <p className="text-xs text-green-600 dark:text-green-400 font-medium">Verification email sent! Check your inbox.</p>
+          ) : (
+            <button
+              onClick={handleResend}
+              disabled={resending}
+              className="text-sm font-medium text-primary-600 hover:text-primary-700 disabled:opacity-50"
+            >
+              {resending ? 'Sending...' : 'Resend verification email'}
+            </button>
+          )}
         </div>
       </AuthLayout>
     );
@@ -93,7 +116,7 @@ export default function SignUp() {
       alternate={{ text: 'Already have an account?', link: 'Sign in', to: '/signin' }}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+        {error && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>}
         <Input label="Full Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Alex Johnson" icon="👤" />
         <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="alex@email.com" icon="✉️" />
         <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" icon="🔒" />

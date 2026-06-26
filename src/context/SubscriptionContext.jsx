@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { subscriptionService } from '../lib/subscriptionService';
 import { SUBSCRIPTION_PLANS } from '../config/constants';
 import { isFounder } from '../utils/admin';
+import { track } from '../lib/analytics';
 
 const SubscriptionContext = createContext();
 

@@ -1,73 +1,88 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
-import { track } from '../../lib/analytics';
+import { useAuth } from '../../context/AuthContext';
+import { captureError } from '../../lib/sentry';
+
+const MAX_WAIT_MS = 10000;
 
 export default function AuthCallback() {
   const navigate = useNavigate();
-  const [status, setStatus] = useState('Processing...');
+  const { user, loading } = useAuth();
+  const [status, setStatus] = useState('Completing sign in...');
+  const [error, setError] = useState(null);
+  const [timedOut, setTimedOut] = useState(false);
+  const handledRef = useRef(false);
 
   useEffect(() => {
-    let cancelled = false;
+    if (handledRef.current) return;
 
-    async function handleOAuth() {
-      console.log('[AuthCallback] Mounted. URL:', window.location.href);
-      console.log('[AuthCallback] Search params:', window.location.search);
-      console.log('[AuthCallback] Hash:', window.location.hash);
-
-      // Let the Supabase client detect the session from URL.
-      // getSession() internally calls _recoverSession() which:
-      //   1. Checks URL for ?code=xxx (PKCE) or #access_token=xxx (implicit)
-      //   2. If PKCE code found, POSTs to /auth/v1/token to exchange for session
-      //   3. Stores session in localStorage
-      //   4. Returns the session
-      const { data, error } = await supabase.auth.getSession();
-
-      if (cancelled) return;
-
-      if (error) {
-        console.error('[AuthCallback] getSession error:', error.message);
-        setStatus('Authentication failed. Redirecting...');
-        await new Promise(r => setTimeout(r, 1500));
-        if (!cancelled) navigate('/signin', { replace: true });
-        return;
-      }
-
-      if (data?.session) {
-        console.log('[AuthCallback] Session established for:', data.session.user?.email);
-        track('google_login', { email: data.session.user?.email });
-        setStatus('Signed in! Redirecting...');
-        // Profile will be handled by AuthContext's resolveUser
-        await new Promise(r => setTimeout(r, 500));
-        if (!cancelled) navigate('/dashboard', { replace: true });
-      } else {
-        console.warn('[AuthCallback] No session found after auth flow.');
-        console.log('[AuthCallback] Current URL parameters may have been consumed.');
-        // Try onAuthStateChange as fallback
-        const { data: subData } = supabase.auth.onAuthStateChange((event, session) => {
-          console.log('[AuthCallback] onAuthStateChange fallback:', event, !!session);
-          if (session && !cancelled) {
-            subData.subscription.unsubscribe();
-            navigate('/dashboard', { replace: true });
-          }
-        });
-        // No session after 5s → redirect to sign in
-        setTimeout(() => {
-          if (!cancelled) {
-            subData.subscription.unsubscribe();
-            setStatus('Session not found. Redirecting to sign in...');
-            setTimeout(() => {
-              if (!cancelled) navigate('/signin', { replace: true });
-            }, 1000);
-          }
-        }, 5000);
-      }
+    if (!loading && user) {
+      handledRef.current = true;
+      setStatus('Signed in! Redirecting...');
+      const t = setTimeout(() => navigate('/dashboard', { replace: true }), 300);
+      return () => clearTimeout(t);
     }
 
-    handleOAuth();
+    if (!loading && !user) {
+      handledRef.current = true;
+      setError('Could not complete sign in. Your session may have expired.');
+      setStatus(null);
+      captureError(new Error('OAuth callback: no user after auth ready'), {
+        tag: 'auth.callback.no_user',
+      });
+    }
+  }, [user, loading, navigate]);
 
-    return () => { cancelled = true; };
-  }, [navigate]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!handledRef.current) {
+        setTimedOut(true);
+        setError('Sign in is taking longer than expected. Check your connection and try again.');
+        setStatus(null);
+      }
+    }, MAX_WAIT_MS);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleRetry = () => {
+    handledRef.current = false;
+    setTimedOut(false);
+    setError(null);
+    setStatus('Retrying...');
+    window.location.href = '/signin';
+  };
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm">
+          <div className="w-14 h-14 rounded-2xl bg-primary-600 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-primary-600/30">
+            <span className="text-2xl font-bold text-white">S</span>
+          </div>
+          <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">!</span>
+          </div>
+          <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">Sign in failed</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">{error}</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={handleRetry}
+              className="px-5 py-2.5 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 active:scale-[0.98] transition-all"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => navigate('/signin', { replace: true })}
+              className="px-5 py-2.5 text-sm font-medium bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all"
+            >
+              Back to Sign In
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">

@@ -24,7 +24,9 @@ export function getAuthErrorMessage(error) {
     message.includes('fetch') ||
     message.includes('failed to fetch') ||
     message.includes('networkerror') ||
-    message.includes('typeerror')
+    message.includes('typeerror') ||
+    message.includes('timeout') ||
+    message.includes('timed out')
   ) {
     return 'Network error. Check your internet connection and try again.';
   }
@@ -72,9 +74,20 @@ export function getAuthErrorMessage(error) {
   // Email not confirmed
   if (
     message.includes('email not confirmed') ||
-    message.includes('email_not_confirmed')
+    message.includes('email_not_confirmed') ||
+    message.includes('verify your email')
   ) {
     return 'Please confirm your email address before signing in. Check your inbox.';
+  }
+
+  // OAuth cancellation
+  if (
+    message.includes('popup closed') ||
+    message.includes('cancelled') ||
+    message.includes('canceled') ||
+    message.includes('user cancelled')
+  ) {
+    return 'Sign in was cancelled. Try again.';
   }
 
   // Other Supabase errors with messages
