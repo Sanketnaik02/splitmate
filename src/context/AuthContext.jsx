@@ -235,7 +235,13 @@ export function AuthProvider({ children }) {
         }
       } else {
         console.log('[trace] init: no session elapsed=' + (Date.now() - ti0) + 'ms');
-        if (!cancelled) finish(null);
+        const params = new URLSearchParams(window.location.search);
+        const oauthInProgress =
+          window.location.pathname === '/auth/callback' &&
+          (params.has('code') || params.has('error'));
+        if (!oauthInProgress && !cancelled) {
+          finish(null);
+        }
       }
     };
 
