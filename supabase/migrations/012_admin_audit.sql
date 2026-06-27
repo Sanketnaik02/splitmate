@@ -18,15 +18,17 @@
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.is_admin(uid UUID)
 RETURNS BOOLEAN
-LANGUAGE sql
+LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER SET search_path = public
 AS $$
-  SELECT EXISTS (
+BEGIN
+  RETURN EXISTS (
     SELECT 1 FROM profiles
     WHERE id = uid
     AND LOWER(email) = LOWER('splitmate02@gmail.com')
   );
+END;
 $$;
 
 -- ============================================================

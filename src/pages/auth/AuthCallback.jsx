@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { captureError } from '../../lib/sentry';
 
-const MAX_WAIT_MS = 10000;
+const MAX_WAIT_MS = 25000;
 
 export default function AuthCallback() {
   const navigate = useNavigate();

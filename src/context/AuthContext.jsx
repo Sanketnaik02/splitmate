@@ -31,11 +31,15 @@ function mapProfile(data) {
 }
 
 async function fetchProfile(userId) {
+  const t0 = Date.now();
+  console.log('[trace] fetchProfile: ENTER userId=' + userId + ' t=' + t0);
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', userId)
     .maybeSingle();
+  const t1 = Date.now();
+  console.log('[trace] fetchProfile: query DONE elapsed=' + (t1 - t0) + 'ms data=' + (data ? 'found' : 'null') + ' error=' + (error ? error.message : 'null'));
 
   if (error) {
     console.error('[Auth] fetchProfile error:', error.message);
@@ -56,7 +60,8 @@ async function ensureProfile(sessionUser) {
     default_currency: 'INR',
   };
 
-  console.log('[Auth] ensureProfile: upserting profile for', sessionUser.email);
+  const t0 = Date.now();
+  console.log('[trace] ensureProfile: ENTER email=' + sessionUser.email + ' t=' + t0);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), PROFILE_TIMEOUT_MS);
@@ -67,6 +72,8 @@ async function ensureProfile(sessionUser) {
       .upsert(profile, { onConflict: 'id' })
       .select()
       .maybeSingle();
+    const t1 = Date.now();
+    console.log('[trace] ensureProfile: upsert DONE elapsed=' + (t1 - t0) + 'ms data=' + (data ? 'found' : 'null') + ' error=' + (error ? error.message : 'null'));
 
     if (error) {
       console.warn('[Auth] ensureProfile error:', error.message);
@@ -109,6 +116,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const pendingRef = useRef({});
   const lastCallRef = useRef({});
+  const resolveUserCallIdRef = useRef(0);
 
   function checkCooldown(key) {
     const now = Date.now();
@@ -132,44 +140,57 @@ export function AuthProvider({ children }) {
   }
 
   async function resolveUser(sessionUser) {
-    console.log('[Auth] resolveUser: checking profile for', sessionUser.email);
+    const callId = ++resolveUserCallIdRef.current;
+    const t0 = Date.now();
+    console.log('[trace] resolveUser#' + callId + ': ENTER email=' + sessionUser.email + ' t=' + t0);
     let profile;
     try {
+      console.log('[trace] resolveUser#' + callId + ': calling fetchProfile t=' + Date.now());
       profile = await timeoutPromise(
         fetchProfile(sessionUser.id),
         PROFILE_TIMEOUT_MS,
         'fetchProfile'
       );
+      console.log('[trace] resolveUser#' + callId + ': fetchProfile returned elapsed=' + (Date.now() - t0) + 'ms profile=' + (profile ? 'ok' : 'null'));
     } catch (err) {
-      console.warn('[Auth] fetchProfile failed:', err.message);
+      const t1 = Date.now();
+      console.warn('[trace] resolveUser#' + callId + ': fetchProfile THREW elapsed=' + (t1 - t0) + 'ms msg=' + err.message + ' stack=' + (err.stack || 'no-stack'));
       profile = null;
     }
 
     if (!profile) {
-      console.log('[Auth] resolveUser: no profile found, creating one');
+      const t2 = Date.now();
+      console.log('[trace] resolveUser#' + callId + ': no profile, calling ensureProfile elapsed=' + (t2 - t0) + 'ms');
       try {
         profile = await timeoutPromise(
           ensureProfile(sessionUser),
           PROFILE_TIMEOUT_MS,
           'ensureProfile'
         );
+        console.log('[trace] resolveUser#' + callId + ': ensureProfile returned elapsed=' + (Date.now() - t2) + 'ms profile=' + (profile ? 'ok' : 'null'));
       } catch (err) {
-        console.warn('[Auth] ensureProfile failed:', err.message);
+        const t3 = Date.now();
+        console.warn('[trace] resolveUser#' + callId + ': ensureProfile THREW elapsed=' + (t3 - t2) + 'ms msg=' + err.message + ' stack=' + (err.stack || 'no-stack'));
         profile = null;
       }
     }
 
     if (profile) {
-      console.log('[Auth] resolveUser: profile resolved, setting user');
-      identify(profile.id, {
-        email: profile.email,
-        display_name: profile.displayName,
-        splitmate_id: profile.splitmateId,
-      });
+      console.log('[trace] resolveUser#' + callId + ': profile RESOLVED total_elapsed=' + (Date.now() - t0) + 'ms');
+      try {
+        identify(profile.id, {
+          email: profile.email,
+          display_name: profile.displayName,
+          splitmate_id: profile.splitmateId,
+        });
+      } catch (identifyErr) {
+        console.warn('[trace] resolveUser#' + callId + ': identify() THREW msg=' + identifyErr.message + ' stack=' + (identifyErr.stack || 'no-stack'));
+      }
+      console.log('[trace] resolveUser#' + callId + ': RETURN via RESOLVED path total=' + (Date.now() - t0) + 'ms');
       return profile;
     }
 
-    console.warn('[Auth] resolveUser: using fallback from session metadata');
+    console.warn('[trace] resolveUser#' + callId + ': RETURN via FALLBACK path total=' + (Date.now() - t0) + 'ms');
     return mapSessionUser(sessionUser);
   }
 
@@ -178,15 +199,22 @@ export function AuthProvider({ children }) {
     let resolved = false;
 
     function finish(newUser) {
-      if (cancelled || resolved) return;
+      if (cancelled || resolved) {
+        console.log('[trace] finish: SKIP cancelled=' + cancelled + ' resolved=' + resolved + ' newUser=' + (newUser ? 'ok' : 'null') + ' at t=' + Date.now());
+        return;
+      }
       resolved = true;
+      console.log('[trace] finish: PROCEED user=' + (newUser ? 'ok' : 'null') + ' at t=' + Date.now());
       if (newUser !== undefined) setUser(newUser);
       setLoading(false);
     }
 
     const init = async () => {
-      console.log('[Auth] init: checking existing session');
+      const ti0 = Date.now();
+      console.log('[trace] init: START t=' + ti0);
       const { data: { session }, error } = await supabase.auth.getSession();
+      console.log('[trace] init: getSession DONE elapsed=' + (Date.now() - ti0) + 'ms session=' + (session ? 'yes' : 'null') + ' error=' + (error ? error.message : 'null'));
+
       if (error) {
         console.warn('[Auth] init: getSession error:', error.message);
       }
@@ -194,48 +222,76 @@ export function AuthProvider({ children }) {
       if (cancelled) return;
 
       if (session?.user) {
-        const userData = await resolveUser(session.user);
+        console.log('[trace] init: calling resolveUser from getSession path');
+        let userData;
+        try {
+          userData = await resolveUser(session.user);
+          console.log('[trace] init: resolveUser DONE total_elapsed=' + (Date.now() - ti0) + 'ms');
+        } catch (initRuErr) {
+          console.error('[trace] init: resolveUser UNCAUGHT EXCEPTION elapsed=' + (Date.now() - ti0) + 'ms msg=' + initRuErr.message + ' stack=' + (initRuErr.stack || 'no-stack'));
+        }
         if (!cancelled) {
           finish(userData);
         }
       } else {
-        console.log('[Auth] init: no session');
+        console.log('[trace] init: no session elapsed=' + (Date.now() - ti0) + 'ms');
+        if (!cancelled) finish(null);
       }
     };
 
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[Auth] onAuthStateChange: event=' + event, 'email=' + (session?.user?.email || 'none'));
+      const te = Date.now();
+      console.log('[trace] onAuthStateChange: ENTER event=' + event + ' email=' + (session?.user?.email || 'none') + ' t=' + te);
 
       if (cancelled) return;
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session?.user) {
-          const userData = await resolveUser(session.user);
+          console.log('[trace] onAuthStateChange: calling resolveUser for event=' + event);
+          let userData;
+          try {
+            userData = await resolveUser(session.user);
+            console.log('[trace] onAuthStateChange: resolveUser DONE event=' + event + ' elapsed=' + (Date.now() - te) + 'ms user=' + (userData ? 'ok' : 'null'));
+          } catch (oscRuErr) {
+            console.error('[trace] onAuthStateChange: resolveUser UNCAUGHT EXCEPTION event=' + event + ' elapsed=' + (Date.now() - te) + 'ms msg=' + oscRuErr.message + ' stack=' + (oscRuErr.stack || 'no-stack'));
+          }
           if (!cancelled) {
             finish(userData);
           }
         }
       } else if (event === 'SIGNED_OUT') {
-        console.log('[Auth] onAuthStateChange: signed out');
+        console.log('[trace] onAuthStateChange: SIGNED_OUT');
         finish(null);
       } else if (event === 'INITIAL_SESSION') {
         if (session?.user) {
-          const userData = await resolveUser(session.user);
+          console.log('[trace] onAuthStateChange: calling resolveUser for INITIAL_SESSION');
+          let userData;
+          try {
+            userData = await resolveUser(session.user);
+            console.log('[trace] onAuthStateChange: resolveUser DONE INITIAL_SESSION elapsed=' + (Date.now() - te) + 'ms');
+          } catch (oscIsErr) {
+            console.error('[trace] onAuthStateChange: resolveUser UNCAUGHT EXCEPTION INITIAL_SESSION elapsed=' + (Date.now() - te) + 'ms msg=' + oscIsErr.message + ' stack=' + (oscIsErr.stack || 'no-stack'));
+          }
           if (!cancelled) {
             finish(userData);
           }
-        } else {
-          finish(null);
         }
+        // Do not call finish(null) here. INITIAL_SESSION fires before the PKCE
+        // code exchange completes on /auth/callback. Calling finish(null) at this
+        // point permanently closes the one-shot gate and blocks the real SIGNED_IN
+        // event that arrives moments later. The no-session case is handled by
+        // init() after getSession() has confirmed the state definitively.
       }
     });
 
     const safetyTimeout = setTimeout(() => {
       if (!resolved) {
-        console.warn('[Auth] safety timeout: forcing finish');
+        console.warn('[trace] SAFETY_TIMEOUT FIRED at ' + (Date.now()) + 'ms after mount — auth not resolved yet');
         finish(null);
+      } else {
+        console.log('[trace] SAFETY_TIMEOUT FIRED at ' + (Date.now()) + 'ms after mount — already resolved (ok)');
       }
     }, 15000);
 
