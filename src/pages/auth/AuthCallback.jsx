@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { captureError } from '../../lib/sentry';
 
@@ -13,6 +14,75 @@ export default function AuthCallback() {
   const [timedOut, setTimedOut] = useState(false);
   const handledRef = useRef(false);
 
+  // Primary path: explicit PKCE code exchange.
+  //
+  // When Google (or any OAuth provider) redirects back with ?code=, this effect
+  // runs exchangeCodeForSession() and awaits its completion synchronously.
+  // Once the exchange resolves, getSession() is called directly — the session
+  // is guaranteed to be in localStorage at this point, so there is no race
+  // against the SIGNED_IN event or AuthContext timing.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+
+    // No OAuth code — this is not a PKCE callback (e.g. email verification
+    // that uses a different mechanism). Fall through to the AuthContext fallback.
+    if (!code) return;
+
+    const exchange = async () => {
+      try {
+        // supabase-js v2: exchangeCodeForSession(code: string)
+        // Returns { data: { session, user }, error }
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (exchangeError) {
+          if (handledRef.current) return;
+          handledRef.current = true;
+          captureError(exchangeError, { tag: 'auth.callback.exchange_error' });
+          setError(exchangeError.message || 'Sign in failed. Please try again.');
+          setStatus(null);
+          return;
+        }
+
+        // Exchange succeeded. The session is now written to localStorage.
+        // Read it directly — no dependency on any async event.
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (handledRef.current) return;
+
+        if (session) {
+          handledRef.current = true;
+          setStatus('Signed in! Redirecting...');
+          setTimeout(() => navigate('/dashboard', { replace: true }), 300);
+        } else {
+          handledRef.current = true;
+          captureError(
+            new Error('PKCE exchange succeeded but getSession returned null'),
+            { tag: 'auth.callback.no_session_post_exchange' }
+          );
+          setError('Could not complete sign in. Please try again.');
+          setStatus(null);
+        }
+      } catch (err) {
+        if (handledRef.current) return;
+        handledRef.current = true;
+        captureError(err, { tag: 'auth.callback.exchange_exception' });
+        setError('Sign in failed. Please try again.');
+        setStatus(null);
+      }
+    };
+
+    exchange();
+  }, [navigate]);
+
+  // Fallback path: watch AuthContext resolution.
+  //
+  // Handles cases where there is no ?code= in the URL (e.g. email confirmation
+  // redirects, or password reset). Also acts as a safety net on the OAuth path
+  // if AuthContext resolves before the exchange effect completes.
+  //
+  // When ?code= IS present, the !loading && !user branch is intentionally
+  // suppressed — the exchange effect above owns the outcome for that case.
   useEffect(() => {
     if (handledRef.current) return;
 
@@ -24,15 +94,21 @@ export default function AuthCallback() {
     }
 
     if (!loading && !user) {
-      handledRef.current = true;
-      setError('Could not complete sign in. Your session may have expired.');
-      setStatus(null);
-      captureError(new Error('OAuth callback: no user after auth ready'), {
-        tag: 'auth.callback.no_user',
-      });
+      const params = new URLSearchParams(window.location.search);
+      if (!params.has('code')) {
+        // Only surface the no-user error when there is no OAuth exchange
+        // in progress. If ?code= exists, the exchange effect handles the outcome.
+        handledRef.current = true;
+        setError('Could not complete sign in. Your session may have expired.');
+        setStatus(null);
+        captureError(new Error('OAuth callback: no user after auth ready'), {
+          tag: 'auth.callback.no_user',
+        });
+      }
     }
   }, [user, loading, navigate]);
 
+  // Timeout safety net — fires if neither path resolves within MAX_WAIT_MS.
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!handledRef.current) {
